@@ -4,6 +4,7 @@ export const DEFAULT_SETTINGS = {
   multrin: true,
   animations: true,
   overlayBookmarks: true,
+  selectedPrinter: [],
   suggestions: true,
   searchEngines: [
     {

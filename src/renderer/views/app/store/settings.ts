@@ -1,5 +1,5 @@
 import { observable } from 'mobx';
-import { ipcRenderer } from 'electron';
+import { ipcRenderer, PrinterInfo } from 'electron';
 import { writeFile, readFileSync } from 'fs';
 
 import { ISettings } from '~/interfaces';
@@ -7,6 +7,9 @@ import { getPath } from '~/utils';
 import { darkTheme, lightTheme } from '~/renderer/constants';
 import { Store } from '.';
 import { DEFAULT_SETTINGS } from '~/constants';
+import { interceptReads } from 'mobx/lib/internal';
+import { ISelectedPrinter } from '~/interfaces/selected-printer';
+import console = require('console');
 
 export type SettingsSection =
   | 'appearance'
@@ -18,7 +21,8 @@ export type SettingsSection =
   | 'language'
   | 'shortcuts'
   | 'downloads'
-  | 'system';
+  | 'system'
+  | 'printer';
 
 export class SettingsStore {
   @observable
@@ -27,11 +31,14 @@ export class SettingsStore {
   @observable
   public object: ISettings = DEFAULT_SETTINGS;
 
+  @observable
+  public listPrinter: PrinterInfo[] = [];
+
   constructor(private store: Store) {}
 
   public save() {
     ipcRenderer.send('settings', this.object);
-
+    console.log(getPath('settings.json'));
     writeFile(getPath('settings.json'), JSON.stringify(this.object), err => {
       if (err) console.error(err);
     });
@@ -44,7 +51,10 @@ export class SettingsStore {
     };
 
     this.store.theme = this.object.darkTheme ? darkTheme : lightTheme;
-
+    ipcRenderer.send('get-list-printer');
+    ipcRenderer.on('list-printer-fetched',(e:any, printers: PrinterInfo[]) => {
+      this.listPrinter = printers;
+    })
     ipcRenderer.send('settings', this.object);
   }
 }

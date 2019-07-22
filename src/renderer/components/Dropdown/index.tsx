@@ -107,6 +107,7 @@ export class Dropdown extends React.PureComponent<Props, State> {
       });
 
       if (onChange) onChange(value, selectedValue);
+      
     }
   }
 

@@ -6,6 +6,7 @@ import { getPath } from '~/utils';
 import { readFileSync, writeFileSync } from 'fs';
 import { runMessagingService, Multrin } from '../services';
 import { PermissionsWindow, AuthWindow, FindWindow } from '.';
+import console = require('console');
 
 export class AppWindow extends BrowserWindow {
   public viewManager: ViewManager = new ViewManager();
@@ -129,7 +130,9 @@ export class AppWindow extends BrowserWindow {
     });
 
     this.on('scroll-touch-end', () => {
-      this.viewManager.selected.webContents.send('scroll-touch-end');
+      if (typeof this.viewManager.selected !== "undefined" ){
+        this.viewManager.selected.webContents.send('scroll-touch-end');
+      }
       this.webContents.send('scroll-touch-end');
     });
   }

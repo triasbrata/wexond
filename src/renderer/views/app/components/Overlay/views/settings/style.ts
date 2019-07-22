@@ -21,6 +21,12 @@ export const Header = styled.div`
   ${robotoLight()};
 `;
 
+export const SubHeader = styled.div`
+  margin: 4px 0 4px 8px;
+  font-size: 14px;
+  ${robotoLight()};
+`;
+
 export const Row = styled.div`
   width: 100%;
   display: flex;

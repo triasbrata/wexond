@@ -8,6 +8,7 @@ import { Appearance } from './Appearance';
 import { Container } from '../..';
 import { Scrollable2, Sections } from '../../style';
 import { AddressBar } from './AddressBar';
+import { Printer } from './Printer';
 
 const MenuItem = observer(
   ({ section, children }: { section: SettingsSection; children: any }) => (
@@ -36,10 +37,12 @@ export const Settings = observer(() => {
           <MenuItem section="language">Languages</MenuItem>
           <MenuItem section="shortcuts">Keyboard shortcuts</MenuItem>
           <MenuItem section="system">System</MenuItem>
+          <MenuItem section="printer">Printer</MenuItem>
         </NavigationDrawer>
         <Sections style={{ paddingTop: 48 }}>
           {selectedSection === 'appearance' && <Appearance />}
           {selectedSection === 'address-bar' && <AddressBar />}
+          {selectedSection === 'printer' && <Printer />}
         </Sections>
       </Scrollable2>
     </Container>
