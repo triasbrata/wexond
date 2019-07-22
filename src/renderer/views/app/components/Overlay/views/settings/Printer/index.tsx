@@ -9,7 +9,6 @@ import { onSwitchChange } from '~/renderer/views/app/utils';
 import console = require('console');
 import { PrinterInfo } from 'electron';
 import { PrinterUsedFor, ISelectedPrinter } from '~/interfaces/selected-printer';
-import { safeStringifyJson } from 'builder-util-runtime';
 
 const onSelectPrinterChange = (name: string, usedFor: string) => {
   store.settings.object.selectedPrinter = store.settings.object.selectedPrinter.filter(function (item:ISelectedPrinter) {
@@ -47,8 +46,8 @@ const SelectPrinter = (props:{usedFor:string, title:string}) =>{
           ))}
         </Dropdown>
       </Control>
-    </Row>
-}
+    </Row>);
+};
 
 export const Printer = () => {
   return (
