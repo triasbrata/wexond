@@ -16,6 +16,8 @@ import { DEFAULT_SETTINGS } from '~/constants';
 import console = require('console');
 import { PrintDirect } from './etc/PrinterDirect';
 
+process.env['ELECTRON_DISABLE_SECURITY_WARNINGS'] = true;
+
 export const log = require('electron-log');
 
 app.setPath('userData', resolve(homedir(), '.wexond'));
