@@ -14,6 +14,7 @@ import { runAutoUpdaterService } from './services/auto-updater';
 import { checkFiles } from '~/utils/files';
 import { DEFAULT_SETTINGS } from '~/constants';
 import console = require('console');
+import { PrintDirect } from './etc/PrinterDirect';
 
 export const log = require('electron-log');
 
@@ -31,14 +32,6 @@ export let settings: ISettings = DEFAULT_SETTINGS;
 ipcMain.on('settings', (e: any, s: ISettings) => {
   settings = { ...settings, ...s };
 });
-
-//** listener to get all printer  */
-
-ipcMain.on('get-list-printer', (e:any) => {
-  if(appWindow){
-    e.sender.send('list-printer-fetched', appWindow.webContents.getPrinters());
-  }
-})
 
 // app.setAsDefaultProtocolClient('http');
 // app.setAsDefaultProtocolClient('https');
@@ -82,6 +75,9 @@ app.on('ready', async () => {
   });
 
   appWindow = new AppWindow();
+  const printDirect = new PrintDirect(appWindow, settings);
+  printDirect.listenFileToPrint();
+  printDirect.listenSettingFetchPrinter();
 
   Menu.setApplicationMenu(getMainMenu(appWindow));
 

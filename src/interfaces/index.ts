@@ -7,3 +7,4 @@ export * from './settings';
 export * from './suggestion';
 export * from './theme';
 export * from './weather';
+export * from './selected-printer'

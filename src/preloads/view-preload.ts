@@ -1,4 +1,5 @@
 import { ipcRenderer, remote, webFrame } from 'electron';
+import console = require('console');
 
 const tabId = remote.getCurrentWebContents().id;
 
@@ -123,7 +124,7 @@ window.addEventListener('load', () => {
 });
 
 const onFormSubmit = (e: Event) => {
-  dev(e);
+  // dev(e);
 
   const form = e.target as HTMLFormElement;
   const inputs = getFormInputs(form);
@@ -137,3 +138,36 @@ const onFormSubmit = (e: Event) => {
     }
   }
 }
+window.addEventListener('print-file',(e:any) => {
+  ipcRenderer.send('print-file-direct', e.detail);  
+});
+ipcRenderer.on('printer-not-setted',(e, file_name)=>{
+  window.dispatchEvent(new CustomEvent('print-file-progress',{detail:{
+    file_name,
+    progress:'no printer'
+  }}));
+});
+ipcRenderer.on('print-file-downloaded',(e, file_name)=>{
+  window.dispatchEvent(new CustomEvent('print-file-progress',{detail:{
+    file_name,
+    progress:'prepare to download'
+  }}));
+});
+ipcRenderer.on('print-file-fail-to-print',(e, file_name)=>{
+  window.dispatchEvent(new CustomEvent('print-file-progress',{detail:{
+    file_name,
+    progress:'fail to print'
+  }}));
+});
+ipcRenderer.on('print-file-ready-to-print',(e, file_name)=>{
+  window.dispatchEvent(new CustomEvent('print-file-progress',{detail:{
+    file_name,
+    progress:'ready-to-print'
+  }}));
+});
+ipcRenderer.on('print-file-done',(e, file_name)=>{
+  window.dispatchEvent(new CustomEvent('print-file-progress',{detail:{
+    file_name,
+    progress:'print-done'
+  }}));
+});

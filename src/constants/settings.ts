@@ -1,10 +1,11 @@
+import { ISelectedPrinter } from "../interfaces";
 export const DEFAULT_SETTINGS = {
   darkTheme: false,
   shield: true,
   multrin: true,
   animations: true,
   overlayBookmarks: true,
-  selectedPrinter: [],
+  selectedPrinter: new Array<ISelectedPrinter>(),
   suggestions: true,
   searchEngines: [
     {

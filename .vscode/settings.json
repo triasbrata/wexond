@@ -1,3 +1,11 @@
 {
-  "typescript.tsdk": "node_modules\\typescript\\lib"
+  "typescript.tsdk": "node_modules\\typescript\\lib",
+  "files.exclude": {
+    "build": true,
+    "docs": true,
+    ".fusebox": true,
+    ".github": true,
+    ".vscode": true,
+    "node_modules": true
+  }
 }

@@ -86,6 +86,7 @@
     "mobx-react": "6.1.1",
     "mouse-hooks": "0.4.1",
     "nedb": "1.8.0",
+    "node-jre": "^0.2.3",
     "node-vibrant": "3.2.0-alpha",
     "node-window-manager": "1.0.3",
     "pretty-bytes": "5.2.0",
