@@ -35,8 +35,13 @@ export class PrintDirect{
     this.javaPath = platform == 'win32' ? `"${path_win32}"` : 'java';
   }
   listenSettingFetchPrinter() {
+    
+    console.log({appPath :app.getAppPath(), jarpath: this.jarPath, javaPath: this.javaPath});
     ipcMain.on('get-list-printer', (e: any) => {
-      let parsed = JSON.parse(spawnSync(this.javaPath, ['-jar', this.jarPath, '--getPrinter'], { shell: true }).stdout.toString());
+      let cmd = spawnSync(this.javaPath, ['-jar', this.jarPath, '--getPrinter'], { shell: true });
+      let {stdout, stderr} = cmd ;
+      console.log({stdout, stderr});
+      let parsed = JSON.parse(cmd.stdout.toString());
       e.sender.send('list-printer-fetched', parsed);
     });
     
