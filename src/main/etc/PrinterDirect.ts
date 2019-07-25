@@ -70,15 +70,18 @@ export class PrintDirect{
     });
   } 
 
-  pdfBoxPrint({ printerName, filePath, event, data }: { printerName: String; filePath: String; event:any; data:String; }){
-    const pdfboxPath = path.resolve(app.getAppPath(), 'static/pdfbox-app-2.0.16.jar');
-    let spawn = nodejre.spawn([pdfboxPath],'org.apache.pdfbox.tools.PDFBox', [
-      'PrintPDF',
-      '-printerName',
-      printerName,
+  pdfBoxPrint({ printerName, filePath, event, data, copies }: { printerName: String; filePath: String; event:any; data:String; copies:number }){
+    const pdfboxPath = path.resolve(app.getAppPath(), 'static/PrintDirect.jar');
+    args = [
+      '--print',
+      '-printsilent',
       filePath,
-      '-silentPrint'
-    ]);
+      printerName,
+    ];
+    if(copies > 1){
+      args.push(String(copies));
+    }
+    let spawn = nodejre.spawn([pdfboxPath],'app.App', args);
     spawn.stdout.on('data',(sout) => {
       event.reply('print-file-done',data );
       console.log(`stdout: ${sout}`)
