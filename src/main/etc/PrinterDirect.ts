@@ -29,16 +29,17 @@ export class PrintDirect{
   protected javaPath: string;
 
   constructor(appWindow: AppWindow, settings: ISettings){
+    let platform = os.platform().toString();
+    let path_win32 = path.join('C:', "Program Files", "Java", 'jre1.8.0_221', 'bin', 'java.exe');
     this.appWindow = appWindow;
-    this.javaPath = os.platform().toString() == 'win32' ? path.join('C:', "Program Files", "Java", 'jre1.8.0_221', 'bin', 'java.exe') : 'java';
-
+    this.javaPath = platform == 'win32' ? `"${path_win32}"` : 'java';
   }
   listenSettingFetchPrinter() {
     ipcMain.on('get-list-printer', (e: any) => {
       let parsed = JSON.parse(spawnSync(this.javaPath, ['-jar', this.jarPath, '--getPrinter'], { shell: true }).stdout.toString());
-      console.log(parsed);
       e.sender.send('list-printer-fetched', parsed);
     });
+    
   }
 
   listenFileToPrint(){
@@ -68,7 +69,7 @@ export class PrintDirect{
                 return console.error(error);
               }
               event.reply('print-file-ready-to-print', filePath);
-              this.pdfBoxPrint({ printerName, filePath, event,data:filePath, copies: data.copies });
+              this.printFile( printerName, filePath, event, filePath, data.copies);
             })
           }).catch(console.error);
           
@@ -76,7 +77,7 @@ export class PrintDirect{
     });
   } 
 
-  pdfBoxPrint({ printerName, filePath, event, data, copies }: { printerName: string; filePath: string; event:any; data:string; copies:number }){
+  printFile(printerName: string, filePath: string, event:any, data:string, copies:number ){
     const pdfboxPath = this.jarPath;
     let args: string[]  = [
       " -jar",
