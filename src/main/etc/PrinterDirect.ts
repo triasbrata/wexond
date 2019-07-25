@@ -26,13 +26,15 @@ export class PrintDirect{
 
   
   private readonly jarPath = path.resolve(app.getAppPath(), 'static/PrintDirect.jar');
+  protected javaPath: string;
 
   constructor(appWindow: AppWindow, settings: ISettings){
     this.appWindow = appWindow;
+    this.javaPath = os.hostname() == 'windows' ? path.join('C:', "Program Files", "Java", 'jre1.8.0_221', 'bin', 'java.exe') : 'java';
   }
   listenSettingFetchPrinter() {
     ipcMain.on('get-list-printer', (e: any) => {
-      let parsed = JSON.parse(spawnSync('java', ['-jar', this.jarPath, '--getPrinter'], { shell: true }).stdout.toString());
+      let parsed = JSON.parse(spawnSync(this.javaPath, ['-jar', this.jarPath, '--getPrinter'], { shell: true }).stdout.toString());
       console.log(parsed);
       e.sender.send('list-printer-fetched', parsed);
     });
