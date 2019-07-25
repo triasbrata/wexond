@@ -90,9 +90,8 @@ export class PrintDirect{
       args.push(String(copies));
     }
     console.log(args);
-    let cmd = spawn('java', args,{
+    let cmd = spawn(this.javaPath, args,{
       shell:true,
-      
     });
     cmd.stdout.on('data',(sout) => {
       event.reply('print-file-done',data );
