@@ -1,6 +1,6 @@
 {
-  "name": "Wexond",
-  "A"
+  "name": "wexond",
+  "productionName":"Aws Browser",
   "version": "2.2.3",
   "description": "Extensible, fast and innovative web browser with material UI.",
   "keywords": [
