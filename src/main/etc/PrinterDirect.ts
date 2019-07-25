@@ -62,7 +62,7 @@ export class PrintDirect{
                 return console.error(error);
               }
               event.reply('print-file-ready-to-print', filePath);
-              this.pdfBoxPrint({ printerName, filePath, event,data:filePath });
+              this.pdfBoxPrint({ printerName, filePath, event,data:filePath, copies: data.copies });
             })
           }).catch(console.error);
           
