@@ -11,6 +11,8 @@ import util from 'util'
 import { createWriteStream } from 'fs';
 import * as nodejre from 'node-jre';
 import { parse } from 'url';
+import { spawn, spawnSync } from 'child_process';
+
 
 export interface IPrintData {
   file : string,
@@ -23,15 +25,16 @@ export class PrintDirect{
 
 
   
+  private readonly jarPath = path.resolve(app.getAppPath(), 'static/PrintDirect.jar');
+
   constructor(appWindow: AppWindow, settings: ISettings){
     this.appWindow = appWindow;
   }
   listenSettingFetchPrinter() {
     ipcMain.on('get-list-printer', (e: any) => {
-      if (this.appWindow) {
-        e.sender.send('list-printer-fetched', this.appWindow.webContents.getPrinters());
-        this.appWindow.webContents
-      }
+      let parsed = JSON.parse(spawnSync('java', ['-jar', this.jarPath, '--getPrinter'], { shell: true }).stdout.toString());
+      console.log(parsed);
+      e.sender.send('list-printer-fetched', parsed);
     });
   }
 
@@ -70,22 +73,29 @@ export class PrintDirect{
     });
   } 
 
-  pdfBoxPrint({ printerName, filePath, event, data, copies }: { printerName: String; filePath: String; event:any; data:String; copies:number }){
-    const pdfboxPath = path.resolve(app.getAppPath(), 'static/PrintDirect.jar');
-    let args: String[]  = [
+  pdfBoxPrint({ printerName, filePath, event, data, copies }: { printerName: string; filePath: string; event:any; data:string; copies:number }){
+    const pdfboxPath = this.jarPath;
+    let args: string[]  = [
+      " -jar",
+      pdfboxPath,
       '--print',
       '-printsilent',
       filePath,
-      printerName,
+      `"${printerName}"`,
     ];
+    
     if(copies > 1){
       args.push(String(copies));
     }
-    let spawn = nodejre.spawn([pdfboxPath],'app.App', args);
-    spawn.stdout.on('data',(sout) => {
+    console.log(args);
+    let cmd = spawn('java', args,{
+      shell:true,
+      
+    });
+    cmd.stdout.on('data',(sout) => {
       event.reply('print-file-done',data );
       console.log(`stdout: ${sout}`)
     });
-    spawn.stderr.on('data',(sout) => console.log(`stderr: ${sout}`));
+    cmd.stderr.on('data',(sout) => console.log(`stderr: ${sout}`));
   }
 }

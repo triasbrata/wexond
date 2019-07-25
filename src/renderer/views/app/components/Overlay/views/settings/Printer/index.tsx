@@ -27,10 +27,7 @@ const SelectPrinter = (props:{usedFor:string, title:string}) =>{
       return item.usedFor === usedFor;
     });
     if (!selectedFromStore) {
-      return listPrinter.find(function (printer: PrinterInfo) {
-
-        return printer.isDefault;
-      }).name;
+      return '';
     }
     return selectedFromStore.name
   };
@@ -41,9 +38,7 @@ const SelectPrinter = (props:{usedFor:string, title:string}) =>{
         <Dropdown
           defaultValue={defaultPrinter(usedFor)}
           onChange={name => onSelectPrinterChange(name, usedFor)}>
-          {listPrinter.map((printer: PrinterInfo, key) => {
-            
-            let name = (printer.description == '') ? printer.name : printer.description;
+          {listPrinter.map(({name} = printer, key) => {
             return (<Dropdown.Item key={key} value={name}>{name}</Dropdown.Item>);
           })}
         </Dropdown>
