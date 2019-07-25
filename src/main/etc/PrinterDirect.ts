@@ -72,7 +72,7 @@ export class PrintDirect{
 
   pdfBoxPrint({ printerName, filePath, event, data, copies }: { printerName: String; filePath: String; event:any; data:String; copies:number }){
     const pdfboxPath = path.resolve(app.getAppPath(), 'static/PrintDirect.jar');
-    args = [
+    let args: String[]  = [
       '--print',
       '-printsilent',
       filePath,
