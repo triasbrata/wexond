@@ -42,7 +42,8 @@ const SelectPrinter = (props:{usedFor:string, title:string}) =>{
           defaultValue={defaultPrinter(usedFor)}
           onChange={name => onSelectPrinterChange(name, usedFor)}>
           {listPrinter.map((printer: PrinterInfo, key) => {
-            let name =  (printer.description == '') ? printer.description : printer.name;
+            
+            let name = (printer.description == '') ? printer.name : printer.description;
             return (<Dropdown.Item key={key} value={name}>{name}</Dropdown.Item>);
           })}
         </Dropdown>
