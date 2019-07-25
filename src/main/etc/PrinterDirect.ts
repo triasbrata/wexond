@@ -30,7 +30,7 @@ export class PrintDirect{
 
   constructor(appWindow: AppWindow, settings: ISettings){
     this.appWindow = appWindow;
-    this.javaPath = os.hostname() == 'windows' ? path.join('C:', "Program Files", "Java", 'jre1.8.0_221', 'bin', 'java.exe') : 'java';
+    this.javaPath = os.platform() == 'windows' ? path.join('C:', "Program Files", "Java", 'jre1.8.0_221', 'bin', 'java.exe') : 'java';
   }
   listenSettingFetchPrinter() {
     ipcMain.on('get-list-printer', (e: any) => {
