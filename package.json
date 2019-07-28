@@ -1,5 +1,6 @@
 {
   "name": "wexond",
+  "productionName":"Aws Browser",
   "version": "2.2.3",
   "description": "Extensible, fast and innovative web browser with material UI.",
   "keywords": [
@@ -10,11 +11,11 @@
     "mobx",
     "styled-components"
   ],
-  "homepage": "https://github.com/wexond/wexond#readme",
+  "homepage": "https://github.com/triasbrata/wexond#readme",
   "main": "build/main.js",
   "author": {
-    "name": "Eryk Rakowski",
-    "email": "sentialx@gmail.com"
+    "name": "Trias Brata",
+    "email": "triasbrata@gmail.com"
   },
   "contributors": [
     {
@@ -24,20 +25,24 @@
     {
       "name": "Mikołaj Palkiewicz",
       "email": "xnerhu@gmail.com"
+    },
+    {
+      "name": "Trias Brata",
+      "email": "triasbrata@gmail.com"
     }
   ],
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/wexond/wexond.git"
+    "url": "git+https://github.com/triasbrata/wexond.git"
   },
   "bugs": {
-    "url": "https://github.com/wexond/wexond/issues"
+    "url": "https://github.com/triasbrata/wexond/issues"
   },
   "scripts": {
     "dev": "cross-env NODE_ENV='dev' node fuse.js",
     "build": "node fuse.js",
     "start": "cross-env ENV='dev' electron .",
-    "compile-win32": "npm run build && electron-builder -w -p always",
+    "compile-win32": "npm run build && electron-builder -w -p never",
     "compile-darwin": "npm run build && electron-builder -m -p always",
     "compile-linux": "npm run build && electron-builder -l -p always",
     "lint": "tslint \"src/**/*.ts*\"",
