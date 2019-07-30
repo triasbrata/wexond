@@ -23,7 +23,11 @@
     ]
   },
   "win": {
-    "target": ["zip"]
+    "target": ["zip"],
+    "arch": [
+      "ia32",
+      "x64"
+    ]
   },
   "mac": {
     "category": "public.app-category.navigation"
