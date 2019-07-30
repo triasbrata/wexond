@@ -23,10 +23,14 @@
     ]
   },
   "win": {
-    "target": ["zip"],
-    "arch": [
-      "ia32",
-      "x64"
+    "target": [
+      {
+        "target":"zip",
+        "arch": [
+          "ia32",
+          "x64"
+        ]
+      }
     ]
   },
   "mac": {
