@@ -1,0 +1,48 @@
+{
+    // See https://go.microsoft.com/fwlink/?LinkId=733558 
+    // for the documentation about the tasks.json format
+    "version": "2.0.0",
+    "tasks": [
+        {
+            "type": "npm",
+            "script": "compile-win32",
+            "problemMatcher": [
+                "$eslint-stylish"
+            ]
+        },
+        {
+            "type": "npm",
+            "label": "build-mac",
+            "script": "compile-darwin",
+            "problemMatcher": [
+                "$eslint-stylish"
+            ],
+            "isBackground": true,
+            "group":"build"
+        },
+        {
+            "type": "npm",
+            "label": "build-linux",
+            "script": "compile-linux",
+            "problemMatcher": [
+                "$eslint-stylish"
+            ],
+            "isBackground": true,
+            "group":"build"
+        },
+        {
+            "label": "Build Mac Linux",
+            "dependsOn":[
+                "build-mac", "build-linux"
+            ],
+            "problemMatcher": [
+                "$eslint-stylish"
+            ],
+            "isBackground": true,
+            "group": {
+                "kind": "build",
+                "isDefault": true
+            }
+        }
+    ]
+}
