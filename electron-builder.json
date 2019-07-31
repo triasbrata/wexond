@@ -6,7 +6,7 @@
   },
   "asar": true,
   "directories": {
-    "output": "${env.OUTPUT_DIR}",
+    "output": "./dist",
     "buildResources": "static/app-icons"
   },
   "files": ["build/**/*", "package.json"],
