@@ -5,7 +5,6 @@
     "docs": true,
     ".fusebox": true,
     ".github": true,
-    ".vscode": true,
     "node_modules": true
   }
 }

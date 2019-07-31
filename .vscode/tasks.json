@@ -4,6 +4,7 @@
     "version": "2.0.0",
     "tasks": [
         {
+            "label": "build-win",
             "type": "npm",
             "script": "compile-win32",
             "problemMatcher": [
@@ -31,10 +32,25 @@
             "group":"build"
         },
         {
-            "label": "Build Mac Linux",
+            "label": "Build All",
             "dependsOn":[
-                "build-mac", "build-linux"
+                "build-mac", "build-linux",
+                // "build-win"
             ],
+            "windows": {
+                "options": {
+                    "env": {
+                     "OUTPUT_DIR":"\\tsclient\browser rs"
+                    }
+                }
+            },
+            "osx": {
+            },
+            "options": {
+                "env": {
+                    "OUTPUT_DIR":"/Users/triasbratayudhana/Dropbox/browser rs",
+                }
+            },
             "problemMatcher": [
                 "$eslint-stylish"
             ],
@@ -43,6 +59,17 @@
                 "kind": "build",
                 "isDefault": true
             }
+        }
+    ],
+    "inputs": [
+        {
+            "id": "outputdir",
+            "description": "output directory",
+            "type": "pickString",
+            "options": [
+                
+                "./dist",
+            ]
         }
     ]
 }

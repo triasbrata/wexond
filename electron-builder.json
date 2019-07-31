@@ -1,13 +1,12 @@
 {
   "appId": "org.wexond.wexond",
   "productName": "Wexond",
-
   "nsis": {
     "include": "static/installer.nsh"
   },
   "asar": true,
   "directories": {
-    "output": "dist",
+    "output": "${env.OUTPUT_DIR}",
     "buildResources": "static/app-icons"
   },
   "files": ["build/**/*", "package.json"],
@@ -25,7 +24,7 @@
   "win": {
     "target": [
       {
-        "target":"zip",
+        "target":"portable",
         "arch": [
           "ia32",
           "x64"
