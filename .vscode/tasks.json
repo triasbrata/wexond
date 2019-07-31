@@ -37,20 +37,6 @@
                 "build-mac", "build-linux",
                 // "build-win"
             ],
-            "windows": {
-                "options": {
-                    "env": {
-                     "OUTPUT_DIR":"\\tsclient\browser rs"
-                    }
-                }
-            },
-            "osx": {
-            },
-            "options": {
-                "env": {
-                    "OUTPUT_DIR":"/Users/triasbratayudhana/Dropbox/browser rs",
-                }
-            },
             "problemMatcher": [
                 "$eslint-stylish"
             ],
