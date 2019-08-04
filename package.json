@@ -1,6 +1,6 @@
 {
   "name": "wexond",
-  "productionName":"Aws Browser",
+  "productionName": "Aws Browser",
   "version": "2.2.3",
   "description": "Extensible, fast and innovative web browser with material UI.",
   "keywords": [
@@ -80,6 +80,7 @@
     "@cliqz/adblocker": "0.11.0",
     "axios": "0.19.0",
     "bookmarks-parser": "1.5.0",
+    "electron-edge-js": "^12.0.0",
     "electron-extensions": "2.0.0",
     "electron-log": "3.0.6",
     "electron-updater": "4.1.2",

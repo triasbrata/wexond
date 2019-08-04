@@ -1,5 +1,6 @@
 import { ipcRenderer, remote, webFrame } from 'electron';
 import console = require('console');
+import { inspect } from 'util';
 
 const tabId = remote.getCurrentWebContents().id;
 
@@ -84,15 +85,6 @@ ipcRenderer.on('scroll-touch-end', () => {
 
   resetCounters();
 });
-
-const dev = (e: any) => {
-  e.preventDefault();
-  e.stopPropagation();
-  const button = document.querySelector('input[type=submit]') as HTMLButtonElement;
-  button.removeAttribute('disabled');
-  button.value = 'Sign in';
-}
-
 const isVisible = (element: HTMLElement) => {
   return element.offsetHeight !== 0;
 }
@@ -117,27 +109,32 @@ const testInput = (input: HTMLInputElement) => {
 
 window.addEventListener('load', () => {
   const forms = document.querySelectorAll('form');
-
+  let input = document.createElement('input');
+  let isElectron = input.cloneNode();
+  
+  isElectron.setAttribute('type', 'hidden');
+  isElectron.setAttribute('name', 'isElectron');
+  isElectron.setAttribute('value', '1');
   forms.forEach(form => {
-    form.addEventListener('submit', onFormSubmit)
+    let form_class = form.getAttribute('class');
+    if(form_class == null){
+      return;
+    }
+    if (form_class.includes('need-electron-validation')){
+      alert('booom');
+      form.appendChild(isElectron);
+    }
+    if (form.getAttribute('id') == 'form_etiket'){
+      let wantRaw = input.cloneNode(); 
+      wantRaw.setAttribute('type', 'hidden');
+      wantRaw.setAttribute('name', 'want');
+      wantRaw.setAttribute('value', 'raw');   
+      form.appendChild(wantRaw);
+    }
   })
 });
 
-const onFormSubmit = (e: Event) => {
-  // dev(e);
 
-  const form = e.target as HTMLFormElement;
-  const inputs = getFormInputs(form);
-
-  for (const input of inputs) {
-    if (testInput(input)) {
-      const type = input.getAttribute('type');
-      const name = input.getAttribute('name').toLowerCase();
-
-      console.log(type, name, input.value);
-    }
-  }
-}
 window.addEventListener('print-file',(e:any) => {
   ipcRenderer.send('print-file-direct', e.detail);  
 });
