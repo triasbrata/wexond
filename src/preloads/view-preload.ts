@@ -1,6 +1,5 @@
 import { ipcRenderer, remote, webFrame } from 'electron';
 import console = require('console');
-import { inspect } from 'util';
 
 const tabId = remote.getCurrentWebContents().id;
 
