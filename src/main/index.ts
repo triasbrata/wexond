@@ -17,6 +17,7 @@ import console = require('console');
 import { PrintDirect } from './etc/PrinterDirect';
 
 process.env['ELECTRON_DISABLE_SECURITY_WARNINGS'] = true;
+process.env['EDGE_USE_CORECLR'] = 1;
 
 export const log = require('electron-log');
 
