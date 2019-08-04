@@ -1,108 +1,49 @@
 import edge from "electron-edge-js";
 
-try {
-    let openport = edge.func({
+export class tscPrint {
+    public static openport: any = edge.func({
         assemblyFile: 'tsclibnet.dll',
         typeName: 'TSCSDK.node_usb',
         methodName: 'openport'
     });
-}
-catch (error) {
-    console.log(error);
-}
-
-
-try {
-    let about = edge.func({
+    public static about: any = edge.func({
         assemblyFile: 'tsclibnet.dll',
         typeName: 'TSCSDK.node_usb',
         methodName: 'about'
     });
-}
-catch (error) {
-    console.log(error);
-}
-
-try {
-    let sendcommand = edge.func({
+    public static sendcommand: any = edge.func({
         assemblyFile: 'tsclibnet.dll',
         typeName: 'TSCSDK.node_usb',
         methodName: 'sendcommand'
     });
-}
-catch (error) {
-    console.log(error);
-}
-
-
-try {
-    let clearbuffer = edge.func({
+    public static clearbuffer: any = edge.func({
         assemblyFile: 'tsclibnet.dll',
         typeName: 'TSCSDK.node_usb',
         methodName: 'clearbuffer'
     });
-}
-catch (error) {
-    console.log(error);
-}
-
-
-try {
-    let printerfont = edge.func({
+    public static printerfont: any = edge.func({
         assemblyFile: 'tsclibnet.dll',
         typeName: 'TSCSDK.node_usb',
         methodName: 'printerfont'
     });
-}
-catch (error) {
-    console.log(error);
-}
-
-
-try {
-    let barcode = edge.func({
+    public static barcode: any = edge.func({
         assemblyFile: 'tsclibnet.dll',
         typeName: 'TSCSDK.node_usb',
         methodName: 'barcode'
     });
-}
-catch (error) {
-    console.log(error);
-}
-
-
-
-try {
-    let printlabel = edge.func({
+    public static printlabel: any = edge.func({
         assemblyFile: 'tsclibnet.dll',
         typeName: 'TSCSDK.node_usb',
         methodName: 'printlabel'
     });
-}
-catch (error) {
-    console.log(error);
-}
-
-
-try {
-    let closeport = edge.func({
+    public static closeport: any = edge.func({
         assemblyFile: 'tsclibnet.dll',
         typeName: 'TSCSDK.node_usb',
         methodName: 'closeport'
     });
-}
-catch (error) {
-    console.log(error);
-}
-
-
-try {
-    let printer_status = edge.func({
+    public static printer_status: any = edge.func({
         assemblyFile: 'tsclibnet.dll',
         typeName: 'TSCSDK.node_usb',
         methodName: 'printerstatus_string'
-    });
-}
-catch (error) {
-    console.log(error);
-}
+    })
+};

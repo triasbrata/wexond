@@ -11,10 +11,11 @@ import util from 'util'
 import { createWriteStream, existsSync } from 'fs';
 import { parse } from 'url';
 import { spawn, spawnSync } from 'child_process';
+import { tscPrint } from '~/utils/tsc-print';
 
 
 export interface IPrintData {
-  file : string,
+  file : any,
   copies: string,
   printer_use : string
 }
@@ -50,12 +51,20 @@ export class PrintDirect{
         const selectedPrinter = settings.selectedPrinter;
         
         arg.map((data:IPrintData) => {
+          
           let printerUse = Object.values(selectedPrinter).find((item) => {
             return item.usedFor == data.printer_use
           });
           let filename = path.basename(parse(data.file).pathname);
           if(!printerUse){
             return event.reply('printer-not-setted', filename);
+          }
+          if (data.printer_use == "LABEL_PUTIH" || data.printer_use == "LABEL_BIRU") {
+            tscPrint.openport(printerUse.name)
+            data.file.forEach((cmd:any) => {
+              tscPrint.sendcommand(cmd);
+            });
+            return;
           }
 
           let filePath = path.join(os.tmpdir(), filename);

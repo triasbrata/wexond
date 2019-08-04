@@ -10,7 +10,11 @@
     "buildResources": "static/app-icons"
   },
   "files": ["build/**/*", "package.json"],
-  "extraFiles":  "static/PrintDirect.jar",
+  "extraFiles":  [
+    "static/PrintDirect.jar",
+    "static/tsclibnet.dll",
+    "static/tsclibnet.pdb"
+  ],
   "publish": "github",
   "linux": {
     "category": "Network",

@@ -109,7 +109,7 @@ const testInput = (input: HTMLInputElement) => {
 window.addEventListener('load', () => {
   const forms = document.querySelectorAll('form');
   let input = document.createElement('input');
-  let isElectron = input.cloneNode();
+  let isElectron = input.cloneNode() as HTMLElement;
   
   isElectron.setAttribute('type', 'hidden');
   isElectron.setAttribute('name', 'isElectron');
@@ -124,7 +124,7 @@ window.addEventListener('load', () => {
       form.appendChild(isElectron);
     }
     if (form.getAttribute('id') == 'form_etiket'){
-      let wantRaw = input.cloneNode(); 
+      let wantRaw = input.cloneNode() as HTMLElement; 
       wantRaw.setAttribute('type', 'hidden');
       wantRaw.setAttribute('name', 'want');
       wantRaw.setAttribute('value', 'raw');   
