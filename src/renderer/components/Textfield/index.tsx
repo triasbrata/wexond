@@ -9,31 +9,39 @@ interface Props {
   color?: string;
   label?: string;
   placeholder?: string;
-  icon?: any;
+  icon?: string;
   onIconClick?: (target: Textfield) => void;
   inputType?: 'text' | 'email' | 'password' | 'number';
   style?: any;
   test?: TestFunction;
+  width?: number;
+  onChange?: (value: string) => void;
+  delay?: number;
 }
 
 interface State {
   activated: boolean;
   focused: boolean;
   error: boolean;
+  value: string;
 }
 
 export class Textfield extends React.PureComponent<Props, State> {
   public inputRef = React.createRef<HTMLInputElement>();
+  private timer : number;
 
-  static defaultProps: Props = {
+  private static defaultProps: Props = {
     color: colors.blue['500'],
     inputType: 'text',
+    width: 280,
+    delay: 200,
   };
 
   public state: State = {
     activated: false,
     focused: false,
     error: false,
+    value: undefined
   };
 
   public get value() {
@@ -45,10 +53,11 @@ export class Textfield extends React.PureComponent<Props, State> {
 
     this.setState({
       activated: !!str.length,
+      value: str,
     });
   }
 
-  onClick = () => {
+  private onClick = () => {
     this.inputRef.current.focus();
   };
 
@@ -66,7 +75,7 @@ export class Textfield extends React.PureComponent<Props, State> {
     });
   };
 
-  public onIconClick = (e: React.SyntheticEvent<any>) => {
+  public onIconClick = (e: React.SyntheticEvent<HTMLDivElement>) => {
     e.stopPropagation();
     e.preventDefault();
 
@@ -93,7 +102,15 @@ export class Textfield extends React.PureComponent<Props, State> {
   }
 
   public onInput = () => {
+    clearTimeout(this.timer);
+    const { onChange } = this.props;
+
     this.setState({ error: false });
+    this.timer = setTimeout(()=>{
+      if (onChange){
+        onChange(this.inputRef.current.value);
+      }
+    }, this.props.delay);
   };
 
   public clear() {
@@ -106,9 +123,9 @@ export class Textfield extends React.PureComponent<Props, State> {
     });
   }
 
-  render() {
-    const { color, label, placeholder, icon, inputType, style } = this.props;
-    const { activated, focused, error } = this.state;
+  public render() {
+    const { color, label, placeholder, icon, inputType, style, width } = this.props;
+    const { activated, focused, error, value } = this.state;
 
     const hasLabel = label != null && label !== '';
     const hasIcon = icon != null && icon !== '';
@@ -120,10 +137,11 @@ export class Textfield extends React.PureComponent<Props, State> {
         className="textfield"
         onClick={this.onClick}
         style={style}
+        width={width || Textfield.defaultProps.width}
       >
         <Input
           ref={this.inputRef}
-          type={inputType}
+          type={inputType || Textfield.defaultProps.inputType}
           color={primaryColor}
           onFocus={this.onFocus}
           onBlur={this.onBlur}
@@ -132,6 +150,7 @@ export class Textfield extends React.PureComponent<Props, State> {
           placeholder={label == null || focused ? placeholder : null}
           onInput={this.onInput}
           spellCheck={false}
+          value={value}
         />
         {hasLabel && (
           <Label activated={activated} focused={focused} color={primaryColor}>

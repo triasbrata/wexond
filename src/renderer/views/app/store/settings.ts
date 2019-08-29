@@ -4,7 +4,7 @@ import { ipcRenderer } from 'electron';
 import { ISettings } from '~/interfaces';
 import { DEFAULT_SETTINGS } from '~/constants';
 import { darkTheme, lightTheme } from '~/renderer/constants';
-import store from '.';
+import { Store } from '.';
 
 export type SettingsSection =
   | 'appearance'
@@ -25,16 +25,31 @@ export class SettingsStore {
   @observable
   public object: ISettings = DEFAULT_SETTINGS;
 
-  constructor() {
-    ipcRenderer.on('get-settings', (e, settings: ISettings) => {
-      this.object = { ...this.object, ...settings };
-      store.theme = this.object.darkTheme ? darkTheme : lightTheme;
-    });
+  public store: Store;
 
-    ipcRenderer.send('get-settings');
+  public constructor(store: Store) {
+    this.store = store;
+
+    const obj = ipcRenderer.sendSync('get-settings');
+    this.updateSettings(obj);
+
+    ipcRenderer.on('update-settings', (e, settings: ISettings) => {
+      this.updateSettings(settings);
+    });
+  }
+
+  public updateSettings(newSettings: ISettings) {
+    this.object = { ...this.object, ...newSettings };
+
+    requestAnimationFrame(() => {
+      this.store.theme = this.object.darkTheme ? darkTheme : lightTheme;
+    });
   }
 
   public async save() {
-    ipcRenderer.send('save-settings', this.object);
+    ipcRenderer.send('save-settings', {
+      settings: JSON.stringify(this.object),
+      incognito: this.store.isIncognito,
+    });
   }
 }

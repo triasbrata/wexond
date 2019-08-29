@@ -1,13 +1,15 @@
 import { parse } from 'url';
 
 import storage from '../services/storage';
-import { IFormFillData, IFormFillMenuItem } from '~/interfaces';
+import { IFormFillData } from '~/interfaces';
 import { getFormFillValue, getFormFillSubValue } from '~/utils/form-fill';
 import { windowsManager } from '..';
 
 const getType = (name: string) => {
-  return (name === 'username' || name === 'login' || name === 'password') ? 'password' : 'address';
-}
+  return name === 'username' || name === 'login' || name === 'password'
+    ? 'password'
+    : 'address';
+};
 
 export const getFormFillMenuItems = async (name: string, value: string) => {
   const dataType = getType(name);
@@ -21,7 +23,7 @@ export const getFormFillMenuItems = async (name: string, value: string) => {
     },
   });
 
-  return items.map(item => {
+  return items.map((item: IFormFillData) => {
     const text = getFormFillValue(name, item, true);
     const subtext = getFormFillSubValue(name, item);
 
@@ -34,9 +36,9 @@ export const getFormFillMenuItems = async (name: string, value: string) => {
         _id: item._id,
         text,
         subtext,
-      } as IFormFillMenuItem;
+      };
     }
 
     return null;
   }).filter(r => r);
-}
+};

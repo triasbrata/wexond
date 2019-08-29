@@ -5,6 +5,7 @@ import { isVisible, searchElements } from '../utils';
 import { getFormFillValue } from '~/utils/form-fill';
 import { IFormFillData } from '~/interfaces';
 import AutoComplete from './auto-complete';
+import { windowId } from '../view-preload';
 
 export type FormField = HTMLInputElement | HTMLSelectElement;
 
@@ -15,7 +16,10 @@ export class Form {
 
   public tempFields: FormField[] = [];
 
-  constructor(public ref: HTMLFormElement) {
+  public ref: HTMLFormElement;
+
+  public constructor(ref: HTMLFormElement) {
+    this.ref = ref;
     this.load();
   }
 
@@ -30,13 +34,16 @@ export class Form {
       }
     }
 
-    this.ref.addEventListener('submit', this.onFormSubmit)
+    this.ref.addEventListener('submit', this.onFormSubmit);
   }
 
   public get fields() {
     const id = this.ref.getAttribute('id');
-    const inside = <FormField[]>searchElements(this.ref, 'input, select');
-    const outside = <FormField[]>searchElements(document, `input[form=${id}], select[form=${id}]`);
+    const inside = searchElements(this.ref, 'input, select') as FormField[];
+    const outside = searchElements(
+      document,
+      `input[form=${id}], select[form=${id}]`,
+    ) as FormField[];
 
     return [...inside, ...outside].filter(el => this.validateField(el));
   }
@@ -44,7 +51,9 @@ export class Form {
   public validateField(field: FormField) {
     const { name, type } = formFieldFilters;
     const isNameValid = name.test(field.getAttribute('name'));
-    const isTypeValid = type.test(field.getAttribute('type')) || field instanceof HTMLSelectElement;
+    const isTypeValid =
+      type.test(field.getAttribute('type')) ||
+      field instanceof HTMLSelectElement;
 
     return isVisible(field) && isNameValid && isTypeValid;
   }
@@ -56,7 +65,9 @@ export class Form {
       if (autoComplete !== 'off') {
         const changed = this.changedFields.indexOf(field) !== -1;
         const temp = this.tempFields.indexOf(field) !== -1;
-        const value = data ? getFormFillValue(field.getAttribute('name'), data) : '';
+        const value = data
+          ? getFormFillValue(field.getAttribute('name'), data)
+          : '';
 
         if (!field.value.length || !changed) {
           field.value = value || '';
@@ -109,10 +120,14 @@ export class Form {
     const sameUsername = this.data && username === this.data.fields.username;
     const samePassword = this.data && password === this.data.fields.password;
 
-    if (!username.length || sameUsername && samePassword) return;
+    if (!username.length || (sameUsername && samePassword)) return;
 
-    ipcRenderer.send('credentials-show', username, password, !samePassword);
-  }
+    ipcRenderer.send(`credentials-show-${windowId}`, {
+      username,
+      password,
+      content: samePassword ? 'update' : 'save',
+    });
+  };
 
   public onFieldFocus = (e: FocusEvent) => {
     const field = e.target as HTMLInputElement;
@@ -121,13 +136,18 @@ export class Form {
     AutoComplete.currentForm = this;
     AutoComplete.visible = true;
 
-    ipcRenderer.send('form-fill-show', {
-      width: rects.width,
-      height: rects.height,
-      x: Math.floor(rects.left),
-      y: Math.floor(rects.top),
-    }, field.getAttribute('name'), field.value);
-  }
+    ipcRenderer.send(
+      `form-fill-show-${windowId}`,
+      {
+        width: rects.width,
+        height: rects.height,
+        x: Math.floor(rects.left),
+        y: Math.floor(rects.top),
+      },
+      field.getAttribute('name'),
+      field.value,
+    );
+  };
 
   public onFieldInput = (e: KeyboardEvent) => {
     AutoComplete.hide();
@@ -140,5 +160,5 @@ export class Form {
     } else if (!target.value.length) {
       this.changedFields.splice(index, 1);
     }
-  }
+  };
 }

@@ -9,14 +9,22 @@ import storage from './services/storage';
 
 export class SessionsManager {
   public view = session.fromPartition('persist:view');
-  public viewIncognito = session.fromPartition('persist:view_incognito');
+  public viewIncognito = session.fromPartition('view_incognito');
 
   public extensions = new ExtensibleSession(this.view);
   public extensionsIncognito = new ExtensibleSession(this.viewIncognito);
 
-  constructor(public windowsManager: WindowsManager) {
-    this.loadExtensions();
+  public incognitoExtensionsLoaded = false;
 
+  private windowsManager: WindowsManager;
+
+  public constructor(windowsManager: WindowsManager) {
+    this.windowsManager = windowsManager;
+
+    this.loadExtensions('normal');
+
+    this.clearCache('incognito');
+    
     this.view.setPermissionRequestHandler(
       async (webContents, permission, callback, details) => {
         if (permission === 'fullscreen') {
@@ -79,23 +87,8 @@ export class SessionsManager {
     });
 
     ipcMain.on('clear-browsing-data', () => {
-      this.view.clearCache((err: any) => {
-        if (err) console.error(err);
-      });
-
-      this.view.clearStorageData({
-        storages: [
-          'appcache',
-          'cookies',
-          'filesystem',
-          'indexdb',
-          'localstorage',
-          'shadercache',
-          'websql',
-          'serviceworkers',
-          'cachestorage',
-        ],
-      });
+      this.clearCache('normal');
+      this.clearCache('incognito');
     });
 
     runAdblockService(this.view);
@@ -103,13 +96,50 @@ export class SessionsManager {
     storage.run();
   }
 
-  public async loadExtensions() {
+  public clearCache(session: 'normal' | 'incognito') {
+    const ses = session === 'incognito' ? this.viewIncognito : this.view;
+
+    ses.clearCache().catch(err => {
+      console.error(err);
+    });
+
+    ses.clearStorageData({
+      storages: [
+        'appcache',
+        'cookies',
+        'filesystem',
+        'indexdb',
+        'localstorage',
+        'shadercache',
+        'websql',
+        'serviceworkers',
+        'cachestorage',
+      ],
+    });
+  }
+
+  public unloadIncognitoExtensions() {
+    /*
+    TODO(sentialx): unload incognito extensions
+    this.incognitoExtensionsLoaded = false;
+    */
+  }
+
+  public async loadExtensions(session: 'normal' | 'incognito') {
+    const context =
+      session === 'incognito' ? this.extensionsIncognito : this.extensions;
+
     const extensionsPath = getPath('extensions');
     const dirs = await promises.readdir(extensionsPath);
 
     for (const dir of dirs) {
-      this.extensions.loadExtension(resolve(extensionsPath, dir));
-      this.extensionsIncognito.loadExtension(resolve(extensionsPath, dir));
+      context.loadExtension(resolve(extensionsPath, dir));
+    }
+
+    context.loadExtension(resolve(__dirname, 'extensions/wexond-darkreader'));
+
+    if (session === 'incognito') {
+      this.incognitoExtensionsLoaded = true;
     }
   }
 }

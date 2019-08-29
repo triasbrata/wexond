@@ -1,6 +1,7 @@
 import { observer } from 'mobx-react-lite';
 import * as React from 'react';
 import { ipcRenderer } from 'electron';
+import { parse } from 'url';
 
 import store from '../../store';
 import { Buttons, StyledToolbar, Handle, Separator } from './style';
@@ -15,7 +16,13 @@ const onUpdateClick = () => {
 };
 
 const onKeyClick = () => {
-  ipcRenderer.send('credentials-show');
+  const { hostname } = parse(store.tabs.selectedTab.url);
+  const list = store.autoFill.credentials.filter(r => r.url === hostname && r.fields.username);
+
+  ipcRenderer.send(`credentials-show-${store.windowId}`, {
+    content: 'list',
+    list,
+  });
 };
 
 const BrowserActions = observer(() => {
@@ -38,7 +45,7 @@ export const Toolbar = observer(() => {
   const { selectedTab } = store.tabs;
 
   let isWindow = false;
-  let blockedAds: any = '';
+  let blockedAds = 0;
   let hasCredentials = false;
 
   if (selectedTab) {
@@ -62,15 +69,15 @@ export const Toolbar = observer(() => {
         </div>
       </div>
       <Buttons>
-        {hasCredentials && (
-          <ToolbarButton icon={icons.key} size={16} onClick={onKeyClick} />
-        )}
         <BrowserActions />
         {store.updateInfo.available && (
           <ToolbarButton icon={icons.download} onClick={onUpdateClick} />
         )}
         {store.extensions.browserActions.length > 0 && <Separator />}
-        {!isWindow && (
+        {hasCredentials && (
+          <ToolbarButton icon={icons.key} size={16} onClick={onKeyClick} />
+        )}
+        {!isWindow && store.settings.object.shield == true && (
           <BrowserAction
             size={18}
             style={{ marginLeft: 0 }}
@@ -83,6 +90,12 @@ export const Toolbar = observer(() => {
               badgeTextColor: 'white',
             }}
           />
+        )}
+        {store.isIncognito && (
+          <>
+            <Separator />
+            <ToolbarButton icon={icons.incognito} size={18} />
+          </>
         )}
       </Buttons>
     </StyledToolbar>

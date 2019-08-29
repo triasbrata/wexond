@@ -6,11 +6,12 @@ import { Dropdown } from '~/renderer/components/Dropdown';
 import { Input } from '~/renderer/components/Input';
 import { getBookmarkTitle } from '~/renderer/views/app/utils/bookmarks';
 import { Button } from '~/renderer/components/Button';
-import { colors } from '~/renderer/constants';
 import { StyledDialog, Title, Row, Label, Buttons } from './styles';
 
 const onMouseDown = (e: React.MouseEvent) => {
   e.stopPropagation();
+
+  store.addBookmark.dropdownRef.current.toggleMenu(false);
 };
 
 const onDone = () => {

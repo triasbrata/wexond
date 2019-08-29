@@ -1,6 +1,5 @@
 import { ipcMain } from 'electron';
 
-import { ISettings } from '~/interfaces';
 import { DEFAULT_SETTINGS } from '~/constants';
 
 import { promises } from 'fs';
@@ -16,33 +15,61 @@ export class Settings extends EventEmitter {
 
   private loaded = false;
 
-  constructor() {
+  public constructor() {
     super();
 
-    ipcMain.on('save-settings', (e: any, s: ISettings) => {
-      this.object = { ...this.object, ...s };
+    ipcMain.on(
+      'save-settings',
+      (e, { settings }: { settings: string; incognito: boolean }) => {
+        this.object = { ...this.object, ...JSON.parse(settings) };
 
-      for (const window of windowsManager.list) {
-        if (window.webContents.id !== e.sender.id) {
-          window.webContents.send('get-settings', this.object);
+        for (const window of windowsManager.list) {
+          if (window.webContents.id !== e.sender.id) {
+            window.webContents.send('update-settings', this.object);
+          }
         }
-      }
 
-      this.addToQueue();
-    });
+        this.updateDarkReader();
+
+        this.addToQueue();
+      },
+    );
 
     ipcMain.on('get-settings', e => {
       if (!this.loaded) {
         this.once('load', () => {
-          e.sender.send('get-settings', this.object);
+          this.updateDarkReader();
+          e.returnValue = this.object;
         });
       } else {
-        e.sender.send('get-settings', this.object);
+        this.updateDarkReader();
+        e.returnValue = this.object;
       }
     });
 
     this.load();
   }
+
+  private updateDarkReader = () => {
+    const contexts = [
+      windowsManager.sessionsManager.extensionsIncognito,
+      windowsManager.sessionsManager.extensions,
+    ];
+
+    contexts.forEach(e => {
+      if (e.extensions['wexond-darkreader']) {
+        e.extensions['wexond-darkreader'].backgroundPage.webContents.send(
+          'api-runtime-sendMessage',
+          {
+            message: {
+              name: 'toggle',
+              toggle: this.object.darkTheme,
+            },
+          },
+        );
+      }
+    });
+  };
 
   private async load() {
     try {
@@ -57,7 +84,8 @@ export class Settings extends EventEmitter {
 
       this.emit('load');
     } catch (e) {
-      console.error(e);
+      this.loaded = true;
+      this.emit('load');
     }
   }
 

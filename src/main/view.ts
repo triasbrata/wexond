@@ -1,28 +1,34 @@
 import { BrowserView, app } from 'electron';
 import { engine } from './services/adblock';
 import { parse } from 'tldts-experimental';
+import { parse as parseUrl } from 'url';
 import { getViewMenu } from './menus/view';
 import { AppWindow } from './windows';
 import { windowsManager } from '.';
+import storage from './services/storage';
 
 export class View extends BrowserView {
-  public title: string = '';
-  public url: string = '';
+  public title = '';
+  public url = '';
   public homeUrl: string;
+  public favicon = '';
 
-  constructor(public window: AppWindow, url: string) {
+  private window: AppWindow;
+
+  public constructor(window: AppWindow, url: string, incognito: boolean) {
     super({
       webPreferences: {
-        preload: `${app.getAppPath()}/build/view-preload.js`,
+        preload: `${app.getAppPath()}/build/view-preload.bundle.js`,
         nodeIntegration: false,
         contextIsolation: true,
-        partition: 'persist:view',
+        partition: incognito ? 'view_incognito' : 'persist:view',
         plugins: true,
         additionalArguments: [`--window-id=${window.id}`],
         nativeWindowOpen: true,
       },
     });
 
+    this.window = window;
     this.homeUrl = url;
 
     this.webContents.on('context-menu', (e, params) => {
@@ -54,7 +60,7 @@ export class View extends BrowserView {
       this.window.webContents.send(`view-loading-${this.webContents.id}`, true);
     });
 
-    this.webContents.addListener('did-start-navigation', (...args: any[]) => {
+    this.webContents.addListener('did-start-navigation', (...args) => {
       this.updateNavigationState();
 
       const url = this.webContents.getURL();
@@ -68,7 +74,7 @@ export class View extends BrowserView {
           ...parse(url),
         });
 
-        this.webContents.insertCSS(styles);
+        (this.webContents.insertCSS as any)(styles, { cssOrigin: 'user' });
 
         for (const script of scripts) {
           this.webContents.executeJavaScript(script);
@@ -83,15 +89,7 @@ export class View extends BrowserView {
 
     this.webContents.addListener(
       'new-window',
-      (
-        e,
-        url,
-        frameName,
-        disposition,
-        options,
-        additionalFeatures,
-        referrer,
-      ) => {
+      (e, url, frameName, disposition) => {
         if (disposition === 'new-window') {
           if (frameName === '_self') {
             e.preventDefault();
@@ -119,9 +117,11 @@ export class View extends BrowserView {
     this.webContents.addListener(
       'page-favicon-updated',
       async (e, favicons) => {
+        this.favicon = favicons[0];
+
         this.window.webContents.send(
           `browserview-favicon-updated-${this.webContents.id}`,
-          favicons[0],
+          this.favicon,
         );
       },
     );
@@ -133,7 +133,7 @@ export class View extends BrowserView {
       );
     });
 
-    (this.webContents as any).addListener(
+    this.webContents.addListener(
       'certificate-error',
       (
         event: Electron.Event,
@@ -169,11 +169,23 @@ export class View extends BrowserView {
     }
   }
 
-  public async getScreenshot(): Promise<string> {
-    return new Promise(resolve => {
-      this.webContents.capturePage(img => {
-        resolve(img.toDataURL());
-      });
+  public async updateCredentials() {
+    if (this.isDestroyed()) return;
+
+    const item = await storage.findOne<any>({
+      scope: 'formfill',
+      query: {
+        url: this.hostname,
+      },
     });
+
+    this.window.webContents.send(
+      `has-credentials-${this.webContents.id}`,
+      item != null,
+    );
+  }
+
+  public get hostname() {
+    return parseUrl(this.url).hostname;
   }
 }

@@ -1,4 +1,12 @@
-import { ISearchEngine } from './search-engine';
+export interface ISearchEngine {
+  name: string;
+  url: string;
+  keywordsUrl: string;
+}
+
+export interface IStartupBehavior {
+  type: 'continue' | 'urls' | 'empty';
+}
 
 export interface ISettings {
   darkTheme: boolean;
@@ -9,4 +17,5 @@ export interface ISettings {
   suggestions: boolean;
   searchEngine: number;
   searchEngines: ISearchEngine[];
+  startupBehavior: IStartupBehavior;
 }

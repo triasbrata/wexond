@@ -5,7 +5,9 @@ import AutoComplete from './models/auto-complete';
 const tabId = remote.getCurrentWebContents().id;
 const arg = process.argv.find(x => x.startsWith('--window-id='));
 
-let windowId: number = null;
+console.log('aha');
+
+export let windowId: number = null;
 
 if (arg) {
   windowId = parseInt(arg.split('--window-id=')[1], 10);
@@ -32,8 +34,6 @@ window.addEventListener('mouseup', e => {
     goForward();
   }
 });
-
-webFrame.executeJavaScript('window', false, (w: any) => {});
 
 let beginningScrollLeft: number = null;
 let beginningScrollRight: number = null;

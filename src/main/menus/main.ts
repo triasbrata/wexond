@@ -1,42 +1,35 @@
-import { Menu } from 'electron';
+import { Menu, BrowserWindow } from 'electron';
 import { defaultTabOptions } from '~/constants/tabs';
 import { WindowsManager } from '../windows-manager';
 
 export const getMainMenu = (windowsManager: WindowsManager) => {
   return Menu.buildFromTemplate([
     {
-      label: 'Edit',
+      label: 'File',
       submenu: [
-        { role: 'undo' },
-        { role: 'redo' },
-        { type: 'separator' },
-        { role: 'cut' },
-        { role: 'copy' },
-        { role: 'paste' },
-        { role: 'pasteandmatchstyle' },
-        { role: 'delete' },
-        { role: 'selectall' },
-        { role: 'quit', accelerator: 'CmdOrCtrl+Shift+Q' },
-        {
-          label: 'Reload',
-          accelerator: 'CmdOrCtrl+R',
-          click: () => {
-            windowsManager.currentWindow.viewManager.selected.webContents.reload();
-          },
-        },
-        {
-          accelerator: 'CmdOrCtrl+F',
-          label: 'Find in page',
-          click() {
-            windowsManager.currentWindow.webContents.send('find');
-          },
-        },
         {
           accelerator: 'CmdOrCtrl+T',
           label: 'New tab',
           click() {
             windowsManager.currentWindow.viewManager.create(defaultTabOptions);
           },
+        },
+        {
+          accelerator: 'CmdOrCtrl+N',
+          label: 'New window',
+          click() {
+            windowsManager.createWindow();
+          },
+        },
+        {
+          accelerator: 'CmdOrCtrl+Shift+N',
+          label: 'New incognito window',
+          click() {
+            windowsManager.createWindow(true);
+          },
+        },
+        {
+          type: 'separator',
         },
         {
           accelerator: 'CmdOrCtrl+W',
@@ -49,8 +42,47 @@ export const getMainMenu = (windowsManager: WindowsManager) => {
           },
         },
         {
+          accelerator: 'CmdOrCtrl+Shift+W',
+          label: 'Close current window',
+          click() {
+            windowsManager.currentWindow.close();
+          },
+        },
+        {
+          type: 'separator',
+        },
+        {
+          role: 'quit',
+          accelerator: 'CmdOrCtrl+Shift+Q',
+        },
+        {
+          label: 'Reload',
+          visible: false,
+          accelerator: 'CmdOrCtrl+R',
+          click: () => {
+            windowsManager.currentWindow.viewManager.selected.webContents.reload();
+          },
+        },
+        {
+          label: 'Reload',
+          visible: false,
+          accelerator: 'F5',
+          click: () => {
+            windowsManager.currentWindow.viewManager.selected.webContents.reload();
+          },
+        },
+        {
+          accelerator: 'CmdOrCtrl+F',
+          label: 'Find in page',
+          visible: false,
+          click() {
+            windowsManager.currentWindow.webContents.send('find');
+          },
+        },
+        {
           accelerator: 'CmdOrCtrl+F4',
           label: 'Close tab',
+          visible: false,
           click() {
             windowsManager.currentWindow.webContents.send(
               'remove-tab',
@@ -61,6 +93,7 @@ export const getMainMenu = (windowsManager: WindowsManager) => {
         {
           accelerator: 'CmdOrCtrl+Shift+T',
           label: 'Revert closed tab',
+          visible: false,
           click() {
             windowsManager.currentWindow.webContents.send('revert-closed-tab');
           },
@@ -68,6 +101,7 @@ export const getMainMenu = (windowsManager: WindowsManager) => {
         {
           accelerator: 'CmdOrCtrl+Tab',
           label: 'Select next tab',
+          visible: false,
           click() {
             windowsManager.currentWindow.webContents.send('select-next-tab');
           },
@@ -75,6 +109,7 @@ export const getMainMenu = (windowsManager: WindowsManager) => {
         {
           accelerator: 'Ctrl+Space',
           label: 'Toggle Overlay',
+          visible: false,
           click() {
             windowsManager.currentWindow.webContents.send('toggle-overlay');
           },
@@ -82,6 +117,7 @@ export const getMainMenu = (windowsManager: WindowsManager) => {
         {
           accelerator: 'CmdOrCtrl+L',
           label: 'Toggle Overlay',
+          visible: false,
           click() {
             windowsManager.currentWindow.webContents.send('toggle-overlay');
           },
@@ -89,6 +125,7 @@ export const getMainMenu = (windowsManager: WindowsManager) => {
         {
           accelerator: 'Alt+F',
           label: 'Toggle Overlay',
+          visible: false,
           click() {
             windowsManager.currentWindow.webContents.send('toggle-overlay');
           },
@@ -96,6 +133,7 @@ export const getMainMenu = (windowsManager: WindowsManager) => {
         {
           accelerator: 'Alt+E',
           label: 'Toggle Overlay',
+          visible: false,
           click() {
             windowsManager.currentWindow.webContents.send('toggle-overlay');
           },
@@ -103,6 +141,7 @@ export const getMainMenu = (windowsManager: WindowsManager) => {
         {
           accelerator: 'CmdOrCtrl+Left',
           label: 'Go back',
+          visible: false,
           click() {
             const { selected } = windowsManager.currentWindow.viewManager;
             if (selected) {
@@ -113,6 +152,7 @@ export const getMainMenu = (windowsManager: WindowsManager) => {
         {
           accelerator: 'CmdOrCtrl+Right',
           label: 'Go forward',
+          visible: false,
           click() {
             const { selected } = windowsManager.currentWindow.viewManager;
             if (selected) {
@@ -121,20 +161,15 @@ export const getMainMenu = (windowsManager: WindowsManager) => {
           },
         },
         {
-          accelerator: 'Ctrl+Shift+W',
-          label: 'Close current window',
+          accelerator: 'CmdOrCtrl+Shift+F12',
+          label: 'Toggle developer tools (window)',
+          visible: false,
           click() {
-            windowsManager.currentWindow.close();
-          },
-        },
-        {
-          accelerator: 'Ctrl+N',
-          label: 'New window',
-          click() {
-            windowsManager.createWindow();
+            BrowserWindow.getFocusedWindow().webContents.openDevTools();
           },
         },
       ],
     },
+    { role: 'editMenu' },
   ]);
 };

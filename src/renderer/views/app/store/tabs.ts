@@ -10,15 +10,19 @@ import {
   TABS_PADDING,
   TOOLBAR_HEIGHT,
   TAB_ANIMATION_EASING,
+  TAB_MAX_WIDTH,
 } from '../constants';
 
 import HorizontalScrollbar from '~/renderer/components/HorizontalScrollbar';
 import store from '.';
 import { ipcRenderer } from 'electron';
-import { getColorBrightness } from '~/utils';
+import { getColorBrightness, prefixHttp } from '~/utils';
 import { defaultTabOptions } from '~/constants/tabs';
+import { Database } from '~/models/database';
+import { IStartupTab } from '~/interfaces/startup-tab';
 
 export class TabsStore {
+
   @observable
   public isDragging: boolean = false;
 
@@ -52,7 +56,7 @@ export class TabsStore {
     interval: null as any,
   };
 
-  constructor() {
+  public constructor() {
     window.addEventListener('mouseup', this.onMouseUp);
     window.addEventListener('mousemove', this.onMouseMove);
     window.addEventListener('resize', this.onResize);
@@ -70,14 +74,14 @@ export class TabsStore {
       this.rearrangeTabsTimer.time++;
     }, 1000);
 
-    ipcRenderer.on('tabs-resize', (e: any) => {
+    ipcRenderer.on('tabs-resize', () => {
       this.updateTabsBounds(false);
     });
 
     ipcRenderer.on(
       'api-tabs-create',
       (
-        e: any,
+        e,
         options: chrome.tabs.CreateProperties,
         isNext: boolean,
         id: number,
@@ -92,7 +96,7 @@ export class TabsStore {
       },
     );
 
-    ipcRenderer.on('add-tab', (e: any, options: any) => {
+    ipcRenderer.on('add-tab', (e, options) => {
       let tab = this.list.find(x => x.id === options.id);
 
       if (tab) {
@@ -120,21 +124,21 @@ export class TabsStore {
       }
     });
 
-    ipcRenderer.on('remove-tab', (e: any, id: number) => {
+    ipcRenderer.on('remove-tab', (e, id: number) => {
       const tab = this.getTabById(id);
       if (tab) {
         tab.close();
       }
     });
 
-    ipcRenderer.on('update-tab-title', (e: any, data: any) => {
+    ipcRenderer.on('update-tab-title', (e, data) => {
       const tab = this.getTabById(data.id);
       if (tab) {
         tab.title = data.title;
       }
     });
 
-    ipcRenderer.on('select-tab', (e: any, id: number) => {
+    ipcRenderer.on('select-tab', (e, id: number) => {
       const tab = this.getTabById(id);
       if (tab) {
         tab.select();
@@ -155,19 +159,17 @@ export class TabsStore {
       }
     });
 
-    ipcRenderer.on(
-      'update-tab-find-info',
-      (e: any, tabId: number, data: any) => {
-        const tab = this.getTabById(tabId);
-        if (tab) {
-          tab.findInfo = data;
-        }
-      },
-    );
+    ipcRenderer.on('update-tab-find-info', (e, tabId: number, data) => {
+      const tab = this.getTabById(tabId);
+      if (tab) {
+        tab.findInfo = data;
+      }
+    });
 
     ipcRenderer.on('revert-closed-tab', () => {
       this.revertClosed();
     });
+
   }
 
   public resetRearrangeTabsTimer() {
@@ -237,6 +239,40 @@ export class TabsStore {
 
   public removeTab(id: number) {
     (this.list as any).remove(this.getTabById(id));
+  }
+
+  @action
+  public pinTab(tab : ITab){
+    tab.isPinned = true;
+    store.startupTabs.updateStartupTabItem(tab);
+    requestAnimationFrame(() => {
+      tab.setLeft(0, false);
+      this.getTabsToReplace(tab, 'left');
+      this.updateTabsBounds(true);
+    });
+  }
+
+  @action
+  public unpinTab(tab : ITab){
+    tab.isPinned = false;
+    store.startupTabs.updateStartupTabItem(tab);
+    requestAnimationFrame(() => {
+      tab.setLeft(Math.max.apply(Math, this.list.map(function(item){return item.left})) + TAB_MAX_WIDTH, false);
+      this.getTabsToReplace(tab, 'right');
+      this.updateTabsBounds(true);
+    });
+  }
+
+  @action
+  public muteTab(tab: ITab){
+    ipcRenderer.send(`mute-view-${store.windowId}`, tab.id);
+    tab.isMuted = true;
+  }
+
+  @action
+  public unmuteTab(tab: ITab){
+    ipcRenderer.send(`unmute-view-${store.windowId}`, tab.id);
+    tab.isMuted = false;
   }
 
   @action

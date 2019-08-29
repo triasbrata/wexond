@@ -1,6 +1,7 @@
 import { observable, computed, action } from 'mobx';
 import { IBookmark } from '~/interfaces';
 import { Database } from '~/models/database';
+import store from '.';
 
 export class BookmarksStore {
   public db = new Database<IBookmark>('bookmarks');
@@ -70,7 +71,7 @@ export class BookmarksStore {
       });
   }
 
-  constructor() {
+  public constructor() {
     this.load();
   }
 
@@ -84,7 +85,7 @@ export class BookmarksStore {
 
   public async load() {
     try {
-      const items = await this.db.get({});
+      let items = await this.db.get({});
 
       let barFolder = items.find(x => x.static === 'main');
       let otherFolder = items.find(x => x.static === 'other');

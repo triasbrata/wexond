@@ -17,13 +17,15 @@ import { WeatherStore } from './weather';
 import { SettingsStore } from './settings';
 import { AddBookmarkStore } from './add-bookmark';
 import { extensionsRenderer } from 'electron-extensions';
-import { FormFillStore } from './form-fill';
+import { AutoFillStore } from './autofill';
 import { getCurrentWindow } from '../utils';
+import { EditAddressStore } from './edit-address';
+import { StartupTabsStore } from './startup-tabs';
 
 export class Store {
   public history = new HistoryStore();
   public bookmarks = new BookmarksStore();
-  public settings = new SettingsStore();
+  public settings = new SettingsStore(this);
   public suggestions = new SuggestionsStore();
   public favicons = new FaviconsStore();
   public addTab = new AddTabStore();
@@ -34,7 +36,9 @@ export class Store {
   public downloads = new DownloadsStore();
   public weather = new WeatherStore();
   public addBookmark = new AddBookmarkStore();
-  public formFill = new FormFillStore();
+  public autoFill = new AutoFillStore();
+  public editAddress = new EditAddressStore();
+  public startupTabs = new StartupTabsStore();
 
   @observable
   public theme = lightTheme;
@@ -70,7 +74,9 @@ export class Store {
 
   @computed
   public get searchEngine() {
-    return this.settings.object.searchEngines[this.settings.object.searchEngine];
+    return this.settings.object.searchEngines[
+      this.settings.object.searchEngine
+    ];
   }
 
   public canToggleMenu = false;
@@ -80,18 +86,21 @@ export class Store {
     y: 0,
   };
 
-  public windowId = getCurrentWindow().webContents.id;
+  public windowId = getCurrentWindow().id;
 
-  constructor() {
-    ipcRenderer.on('update-navigation-state', (e, data: any) => {
+  @observable
+  public isIncognito = ipcRenderer.sendSync(`is-incognito-${this.windowId}`);
+
+  public constructor() {
+    ipcRenderer.on('update-navigation-state', (e, data) => {
       this.navigationState = data;
     });
 
-    ipcRenderer.on('fullscreen', (e: any, fullscreen: boolean) => {
+    ipcRenderer.on('fullscreen', (e, fullscreen: boolean) => {
       this.isFullscreen = fullscreen;
     });
 
-    ipcRenderer.on('html-fullscreen', (e: any, fullscreen: boolean) => {
+    ipcRenderer.on('html-fullscreen', (e, fullscreen: boolean) => {
       this.isHTMLFullscreen = fullscreen;
     });
 

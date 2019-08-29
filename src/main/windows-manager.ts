@@ -7,6 +7,7 @@ import { SessionsManager } from './sessions-manager';
 import { runAutoUpdaterService } from './services';
 import { checkFiles } from '~/utils/files';
 import { Settings } from './models/settings';
+import { isURL, prefixHttp } from '~/utils';
 
 export class WindowsManager {
   public list: AppWindow[] = [];
@@ -17,7 +18,7 @@ export class WindowsManager {
 
   public settings = new Settings();
 
-  constructor() {
+  public constructor() {
     const gotTheLock = app.requestSingleInstanceLock();
 
     if (!gotTheLock) {
@@ -39,6 +40,12 @@ export class WindowsManager {
             }
           }
           return;
+        } else if (isURL(path)) {
+          this.currentWindow.viewManager.create({
+            url: prefixHttp(path),
+            active: true,
+          });
+          return;
         }
 
         this.createWindow();
@@ -56,8 +63,8 @@ export class WindowsManager {
       }
     });
 
-    ipcMain.on('create-window', () => {
-      this.createWindow();
+    ipcMain.on('create-window', (e, incognito = false) => {
+      this.createWindow(incognito);
     });
 
     this.onReady();
@@ -82,15 +89,23 @@ export class WindowsManager {
     });
   }
 
-  public createWindow() {
-    const window = new AppWindow(this);
+  public createWindow(incognito = false) {
+    const window = new AppWindow(this, incognito);
     this.list.push(window);
-    this.sessionsManager.extensions.addWindow(window);
+
+    if (incognito) {
+      this.sessionsManager.extensionsIncognito.addWindow(window);
+      if (!this.sessionsManager.incognitoExtensionsLoaded) {
+        this.sessionsManager.loadExtensions('incognito');
+      }
+    } else {
+      this.sessionsManager.extensions.addWindow(window);
+    }
   }
 
   public findWindowByBrowserView(webContentsId: number) {
     return this.list.find(
-      x => !!x.viewManager.views.find(y => y.id === webContentsId),
+      x => !!x.viewManager.views.find(y => y.webContents.id === webContentsId),
     );
   }
 }

@@ -7,7 +7,7 @@ const WIDTH = 400;
 const HEIGHT = 500;
 
 export class AuthWindow extends PopupWindow {
-  constructor(public appWindow: AppWindow) {
+  public constructor(appWindow: AppWindow) {
     super(appWindow, 'auth');
 
     this.setBounds({
@@ -25,7 +25,7 @@ export class AuthWindow extends PopupWindow {
 
       this.webContents.send('request-auth', url);
 
-      ipcMain.once('request-auth-result', (e: any, result: any) => {
+      ipcMain.once(`request-auth-result-${this.appWindow.id}`, (e, result) => {
         this.hide();
 
         resolve(result);

@@ -1,7 +1,7 @@
 import * as React from 'react';
 import * as ReactDOM from 'react-dom';
 
-import { App } from './components/App';
+import App from './components/App';
 import { fonts } from '../../constants';
 import store from './store';
 import { ipcRenderer } from 'electron';
@@ -34,4 +34,5 @@ styleElement.textContent = `
 document.head.appendChild(styleElement);
 
 store.tabGroups.addGroup();
+store.startupTabs.load();
 ReactDOM.render(<App />, document.getElementById('app'));

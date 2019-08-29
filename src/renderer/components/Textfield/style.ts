@@ -1,10 +1,21 @@
 import styled, { css } from 'styled-components';
 
-import { robotoRegular, centerVertical, robotoMedium, centerIcon, coloredCursor } from '~/renderer/mixins';
+import {
+  robotoRegular,
+  centerVertical,
+  robotoMedium,
+  centerIcon,
+  coloredCursor,
+} from '~/renderer/mixins';
 import { transparency, EASING_FUNCTION } from '~/renderer/constants';
 
+interface StyledTextfieldProps {
+  width?: number;
+}
 export const StyledTextfield = styled.div`
-  width: 280px;
+${({ width}: StyledTextfieldProps) => css`
+  width: ${width === undefined ? 280 : width}px;
+`}
   position: relative;
   border-top-right-radius: 4px;
   border-top-left-radius: 4px;
@@ -42,7 +53,8 @@ export const Input = styled.input`
   &::placeholder {
     text-shadow: 0px 0px 0px rgba(0, 0, 0, ${transparency.text.medium});
   }
-  &[type=number]::-webkit-inner-spin-button, &[type=number]::-webkit-outer-spin-button {
+  &[type='number']::-webkit-inner-spin-button,
+  &[type='number']::-webkit-outer-spin-button {
     -webkit-appearance: none;
   }
 `;
@@ -79,7 +91,7 @@ export const Indicator = styled.div`
   position: absolute;
   transition: 0.2s width ${EASING_FUNCTION};
 
-  ${({ focused, color }: { focused: boolean, color: string }) => css`
+  ${({ focused, color }: { focused: boolean; color: string }) => css`
     width: ${focused ? 100 : 0}%;
     background-color: ${color};
   `}
@@ -98,7 +110,7 @@ export const Icon = styled.div`
   ${centerVertical()};
   ${centerIcon(24)};
 
-  ${({ src }: { src: any }) => css`
+  ${({ src }: { src: string }) => css`
     background-image: url(${src});
   `}
 

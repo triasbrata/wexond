@@ -10,6 +10,10 @@ export class ViewManager {
 
   public isHidden = false;
 
+  private window: AppWindow;
+
+  public incognito: boolean;
+
   public get fullscreen() {
     return this._fullscreen;
   }
@@ -19,15 +23,18 @@ export class ViewManager {
     this.fixBounds();
   }
 
-  constructor(public window: AppWindow) {
-    const { id } = window.webContents;
+  public constructor(window: AppWindow, incognito: boolean) {
+    this.window = window;
+    this.incognito = incognito;
+
+    const { id } = window;
     ipcMain.on(
       `view-create-${id}`,
       (e, details: chrome.tabs.CreateProperties) => {
         this.create(details);
       },
     );
-
+    
     ipcMain.on(`view-select-${id}`, (e, id: number, force: boolean) => {
       const view = this.views.find(x => x.webContents.id === id);
       this.select(id);
@@ -40,7 +47,7 @@ export class ViewManager {
       this.destroy(id);
     });
 
-    ipcMain.on(`browserview-call-${id}`, async (e: any, data: any) => {
+    ipcMain.on(`browserview-call-${id}`, async (e, data) => {
       const view = this.views.find(x => x.webContents.id === data.tabId);
       let scope: any = view;
 
@@ -73,6 +80,16 @@ export class ViewManager {
       this.showView();
     });
 
+    ipcMain.on(`mute-view-${id}`, (e, tabId: number) => {
+      const view = this.views.find(x => x.webContents.id === tabId);
+      view.webContents.setAudioMuted(true);
+    });
+
+    ipcMain.on(`unmute-view-${id}`, (e, tabId: number) => {
+      const view = this.views.find(x => x.webContents.id === tabId);
+      view.webContents.setAudioMuted(false);
+    });
+
     setInterval(() => {
       for (const view of this.views) {
         const url = view.webContents.getURL();
@@ -82,7 +99,9 @@ export class ViewManager {
             `view-url-updated-${view.webContents.id}`,
             url,
           );
+
           view.url = url;
+          view.updateCredentials();
         }
       }
     }, 200);
@@ -97,7 +116,7 @@ export class ViewManager {
   }
 
   public create(details: chrome.tabs.CreateProperties, isNext = false) {
-    const view = new View(this.window, details.url);
+    const view = new View(this.window, details.url, this.incognito);
     this.views.push(view);
 
     this.window.webContents.send(
@@ -149,9 +168,7 @@ export class ViewManager {
     view.setAutoResize({
       width: true,
       height: true,
-      horizontal: true,
-      vertical: true,
-    });
+    } as any);
   }
 
   public hideView() {

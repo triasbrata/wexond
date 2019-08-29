@@ -1,5 +1,8 @@
 import * as React from 'react';
 import { observer } from 'mobx-react-lite';
+import { remote } from 'electron';
+import { promises } from 'fs';
+import * as parse from 'node-bookmarks-parser';
 
 import store from '~/renderer/views/app/store';
 import { IBookmark } from '~/interfaces';
@@ -19,11 +22,6 @@ import {
 import Tree from './Tree';
 import { BookmarkSection, PathItem, PathView } from './style';
 import { Content, Scrollable2, Sections } from '../../style';
-import { remote } from 'electron';
-import { promises } from 'fs';
-import { promisify } from 'util';
-
-const parse = promisify(require('bookmarks-parser'));
 
 const scrollRef = React.createRef<HTMLDivElement>();
 
@@ -45,16 +43,26 @@ const onInput = (e: React.KeyboardEvent<HTMLInputElement>) => {
   store.bookmarks.search(e.currentTarget.value);
 };
 
-const onCancelClick = (e: React.MouseEvent) => {
+const onCancelClick = () => {
   store.bookmarks.selectedItems = [];
 };
 
-const onDeleteClick = (e: React.MouseEvent) => {
+const onDeleteClick = () => {
   store.bookmarks.deleteSelected();
 };
 
 const onRemoveClick = (item: IBookmark) => () => {
   store.bookmarks.removeItem(item._id);
+};
+
+const onUnpinClick = (item: IBookmark) => () => {
+  const tab = store.tabs.list.find(x => x.url === item.url && x.isPinned);
+  if (tab){
+    store.tabs.unpinTab(tab);
+  }
+  else{
+    store.bookmarks.removeItem(item._id);
+  }
 };
 
 const onNewFolderClick = () => {
@@ -74,23 +82,23 @@ const onPathItemClick = (item: IBookmark) => () => {
   }
 };
 
-const onImportClick = () => {
-  remote.dialog.showOpenDialog(
+const onImportClick = async () => {
+  const dialogRes = await remote.dialog.showOpenDialog(
+    remote.getCurrentWindow(),
     {
       filters: [{ name: 'Bookmark file', extensions: ['html', 'jsonlz4'] }],
     },
-    async (filePaths: string[]) => {
-      if (filePaths) {
-        const file = await promises.readFile(filePaths[0], 'utf8');
-        const res = await parse(file);
-
-        addImported(res.bookmarks);
-      }
-    },
   );
-};
 
-const onExportClick = () => {};
+  try {
+    const file = await promises.readFile(dialogRes.filePaths[0], 'utf8');
+    const res = parse(file);
+
+    addImported(res);
+  } catch (err) {
+    console.error(err);
+  }
+};
 
 const BookmarksList = observer(() => {
   const items = store.bookmarks.visibleItems;
@@ -142,9 +150,6 @@ export const Bookmarks = observer(() => {
           </NavigationDrawer.Item>
           <NavigationDrawer.Item icon={icons.download} onClick={onImportClick}>
             Import
-          </NavigationDrawer.Item>
-          <NavigationDrawer.Item icon={icons.save} onClick={onNewFolderClick}>
-            Export
           </NavigationDrawer.Item>
         </NavigationDrawer>
         <BookmarksList />

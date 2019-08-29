@@ -7,7 +7,7 @@ const HEIGHT = 175;
 const WIDTH = 350;
 
 export class PermissionsWindow extends PopupWindow {
-  constructor(public appWindow: AppWindow) {
+  public constructor(appWindow: AppWindow) {
     super(appWindow, 'permissions');
 
     this.setBounds({
@@ -35,10 +35,13 @@ export class PermissionsWindow extends PopupWindow {
 
       this.webContents.send('request-permission', { name, url, details });
 
-      ipcMain.once('request-permission-result', (e: any, r: boolean) => {
-        resolve(r);
-        this.hide();
-      });
+      ipcMain.once(
+        `request-permission-result-${this.appWindow.id}`,
+        (e, r: boolean) => {
+          resolve(r);
+          this.hide();
+        },
+      );
     });
   }
 
