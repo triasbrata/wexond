@@ -1,29 +1,41 @@
 import { BrowserWindow, app } from 'electron';
+import { readFileSync, writeFileSync } from 'fs';
 import { resolve, join } from 'path';
 
 import { ViewManager } from '../view-manager';
 import { getPath } from '~/utils';
-import { readFileSync, writeFileSync } from 'fs';
 import { runMessagingService, Multrin } from '../services';
-import { PermissionsWindow, AuthWindow, FindWindow } from '.';
-import console = require('console');
+import {
+  PermissionsWindow,
+  AuthWindow,
+  FindWindow,
+  FormFillWindow,
+  CredentialsWindow,
+} from '.';
+import { WindowsManager } from '../windows-manager';
 
 export class AppWindow extends BrowserWindow {
-  public viewManager: ViewManager = new ViewManager();
+  public viewManager: ViewManager;
   public multrin = new Multrin(this);
 
   public permissionWindow = new PermissionsWindow(this);
   public authWindow = new AuthWindow(this);
   public findWindow = new FindWindow(this);
+  public formFillWindow = new FormFillWindow(this);
+  public credentialsWindow = new CredentialsWindow(this);
 
-  constructor() {
+  public incognito: boolean;
+
+  private windowsManager: WindowsManager;
+
+  public constructor(windowsManager: WindowsManager, incognito: boolean) {
     super({
       frame: false,
       minWidth: 400,
       minHeight: 450,
       width: 900,
       height: 700,
-      show: false,
+      show: true,
       titleBarStyle: 'hiddenInset',
       webPreferences: {
         plugins: true,
@@ -32,6 +44,11 @@ export class AppWindow extends BrowserWindow {
       },
       icon: resolve(app.getAppPath(), 'static/app-icons/icon.png'),
     });
+
+    this.incognito = incognito;
+    this.windowsManager = windowsManager;
+
+    this.viewManager = new ViewManager(this, incognito);
 
     runMessagingService(this);
 
@@ -65,17 +82,24 @@ export class AppWindow extends BrowserWindow {
       if (!this.isMaximized()) {
         windowState.bounds = this.getBounds();
       }
+
       this.authWindow.rearrange();
       this.findWindow.rearrange();
       this.permissionWindow.rearrange();
+      this.formFillWindow.rearrange();
+      this.credentialsWindow.rearrange();
     });
+
     this.on('move', () => {
       if (!this.isMaximized()) {
         windowState.bounds = this.getBounds();
       }
+
       this.authWindow.rearrange();
       this.findWindow.rearrange();
       this.permissionWindow.rearrange();
+      this.formFillWindow.rearrange();
+      this.credentialsWindow.rearrange();
     });
 
     const resize = () => {
@@ -92,7 +116,19 @@ export class AppWindow extends BrowserWindow {
       windowState.maximized = this.isMaximized();
       windowState.fullscreen = this.isFullScreen();
       writeFileSync(windowDataPath, JSON.stringify(windowState));
+
+      if (
+        incognito &&
+        windowsManager.list.filter(x => x.incognito).length === 1
+      ) {
+        windowsManager.sessionsManager.clearCache('incognito');
+        windowsManager.sessionsManager.unloadIncognitoExtensions();
+      }
+
+      windowsManager.list = windowsManager.list.filter(x => x.id !== this.id);
     });
+
+    // this.webContents.openDevTools({ mode: 'detach' });
 
     if (process.env.ENV === 'dev') {
       this.webContents.openDevTools({ mode: 'detach' });
@@ -100,10 +136,6 @@ export class AppWindow extends BrowserWindow {
     } else {
       this.loadURL(join('file://', app.getAppPath(), 'build/app.html'));
     }
-
-    this.once('ready-to-show', () => {
-      this.show();
-    });
 
     this.on('enter-full-screen', () => {
       this.webContents.send('fullscreen', true);
@@ -134,6 +166,10 @@ export class AppWindow extends BrowserWindow {
         this.viewManager.selected.webContents.send('scroll-touch-end');
       }
       this.webContents.send('scroll-touch-end');
+    });
+
+    this.on('focus', () => {
+      windowsManager.currentWindow = this;
     });
   }
 }

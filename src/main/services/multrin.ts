@@ -7,9 +7,10 @@ import { ProcessWindow } from '../models';
 import { AppWindow } from '../windows';
 import { windowManager, Window } from 'node-window-manager';
 import { TOOLBAR_HEIGHT } from '~/renderer/views/app/constants/design';
-import { settings } from '..';
+import { windowsManager } from '..';
+import { IRectangle, IPoint } from '~/interfaces';
 
-const containsPoint = (bounds: any, point: any) => {
+const containsPoint = (bounds: IRectangle, point: IPoint) => {
   return (
     point.x >= bounds.x &&
     point.y >= bounds.y &&
@@ -33,7 +34,11 @@ export class Multrin {
 
   public interval: any;
 
-  constructor(public appWindow: AppWindow) {
+  private appWindow: AppWindow;
+
+  public constructor(appWindow: AppWindow) {
+    this.appWindow = appWindow;
+
     if (platform() === 'win32') {
       this.activateWindowCapturing();
     }
@@ -48,15 +53,17 @@ export class Multrin {
       }
     };
 
-    ipcMain.on('select-window', (e: any, id: number) => {
+    const { id } = this.appWindow;
+
+    ipcMain.on(`select-window-${id}`, (e, id: number) => {
       this.selectWindow(this.windows.find(x => x.id === id));
     });
 
-    ipcMain.on('detach-window', (e: any, id: number) => {
+    ipcMain.on(`detach-window-${id}`, (e, id: number) => {
       this.detachWindow(this.windows.find(x => x.id === id));
     });
 
-    ipcMain.on('hide-window', () => {
+    ipcMain.on(`hide-window-${id}`, () => {
       if (this.selectedWindow) {
         this.selectedWindow.hide();
         this.isWindowHidden = true;
@@ -80,12 +87,15 @@ export class Multrin {
 
     this.interval = setInterval(this.intervalCallback, 100);
 
-    windowManager.on('window-activated', (window: Window) => {
+    /*windowManager.on('window-activated', (window: Window) => {
       this.appWindow.webContents.send('select-tab', window.id);
-    });
+    });*/
 
     mouseHooks.on('mouse-down', () => {
-      if (this.appWindow.isMinimized()) return;
+      if (this.appWindow.isMinimized() || this.appWindow.isFocused()) {
+        this.draggedWindow = null;
+        return;
+      }
 
       setTimeout(() => {
         if (this.appWindow.isFocused()) {
@@ -99,12 +109,13 @@ export class Multrin {
       }, 50);
     });
 
-    mouseHooks.on('mouse-move', async (e: any) => {
+    mouseHooks.on('mouse-move', async e => {
+      if (this.appWindow.isFocused()) return;
+
       if (
         this.draggedWindow &&
         this.selectedWindow &&
-        this.draggedWindow.id === this.selectedWindow.id &&
-        !this.appWindow.isFocused()
+        this.draggedWindow.id === this.selectedWindow.id
       ) {
         const bounds = this.selectedWindow.getBounds();
         const { lastBounds } = this.selectedWindow;
@@ -136,7 +147,7 @@ export class Multrin {
             height: bounds.height + TOOLBAR_HEIGHT,
             x: bounds.x,
             y: bounds.y - TOOLBAR_HEIGHT,
-          } as any);
+          });
 
           this.isMoving = false;
         }
@@ -147,7 +158,7 @@ export class Multrin {
         !this.appWindow.isMinimized() &&
         this.draggedWindow &&
         !this.windows.find(x => x.id === this.draggedWindow.id) &&
-        settings.multrin
+        windowsManager.settings.object.multrin
       ) {
         const winBounds = this.draggedWindow.getBounds();
         const { lastBounds } = this.draggedWindow;
@@ -216,7 +227,7 @@ export class Multrin {
     });
   }
 
-  intervalCallback = () => {
+  private intervalCallback = () => {
     if (!this.appWindow.isMinimized()) {
       for (const window of this.windows) {
         const title = window.getTitle();
@@ -236,7 +247,7 @@ export class Multrin {
     }
   };
 
-  getContentArea() {
+  public getContentArea() {
     const bounds = this.appWindow.getContentBounds();
 
     bounds.y += TOOLBAR_HEIGHT;
@@ -245,7 +256,7 @@ export class Multrin {
     return bounds;
   }
 
-  selectWindow(window: ProcessWindow) {
+  public selectWindow(window: ProcessWindow) {
     if (!window) return;
 
     if (this.selectedWindow) {
@@ -264,7 +275,7 @@ export class Multrin {
     this.resizeWindow(window);
   }
 
-  resizeWindow(window: ProcessWindow) {
+  public resizeWindow(window: ProcessWindow) {
     if (!window || this.appWindow.isMinimized()) return;
 
     const newBounds = this.getContentArea();
@@ -273,7 +284,7 @@ export class Multrin {
     window.lastBounds = newBounds;
   }
 
-  detachWindow(window: ProcessWindow) {
+  public detachWindow(window: ProcessWindow) {
     if (!window) return;
 
     if (this.selectedWindow === window) {

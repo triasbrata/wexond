@@ -17,6 +17,10 @@ import { WeatherStore } from './weather';
 import { SettingsStore } from './settings';
 import { AddBookmarkStore } from './add-bookmark';
 import { extensionsRenderer } from 'electron-extensions';
+import { AutoFillStore } from './autofill';
+import { getCurrentWindow } from '../utils';
+import { EditAddressStore } from './edit-address';
+import { StartupTabsStore } from './startup-tabs';
 
 export class Store {
   public history = new HistoryStore();
@@ -32,6 +36,9 @@ export class Store {
   public downloads = new DownloadsStore();
   public weather = new WeatherStore();
   public addBookmark = new AddBookmarkStore();
+  public autoFill = new AutoFillStore();
+  public editAddress = new EditAddressStore();
+  public startupTabs = new StartupTabsStore();
 
   @observable
   public theme = lightTheme;
@@ -79,16 +86,21 @@ export class Store {
     y: 0,
   };
 
-  constructor() {
-    ipcRenderer.on('update-navigation-state', (e, data: any) => {
+  public windowId = getCurrentWindow().id;
+
+  @observable
+  public isIncognito = ipcRenderer.sendSync(`is-incognito-${this.windowId}`);
+
+  public constructor() {
+    ipcRenderer.on('update-navigation-state', (e, data) => {
       this.navigationState = data;
     });
 
-    ipcRenderer.on('fullscreen', (e: any, fullscreen: boolean) => {
+    ipcRenderer.on('fullscreen', (e, fullscreen: boolean) => {
       this.isFullscreen = fullscreen;
     });
 
-    ipcRenderer.on('html-fullscreen', (e: any, fullscreen: boolean) => {
+    ipcRenderer.on('html-fullscreen', (e, fullscreen: boolean) => {
       this.isHTMLFullscreen = fullscreen;
     });
 
@@ -121,10 +133,16 @@ export class Store {
       },
     );
 
+    ipcRenderer.on('toggle-overlay', () => {
+      if (!this.overlay.isNewTab) {
+        this.overlay.visible = !this.overlay.visible;
+      }
+    });
+
     ipcRenderer.on('find', () => {
       const tab = this.tabs.selectedTab;
       if (tab) {
-        ipcRenderer.send('find-show', tab.id, tab.findInfo);
+        ipcRenderer.send(`find-show-${this.windowId}`, tab.id, tab.findInfo);
       }
     });
 

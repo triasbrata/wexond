@@ -1,11 +1,9 @@
-import * as Datastore from 'nedb';
-
-import { Favicon } from '~/interfaces';
-import { requestURL, getPath } from '~/utils';
+import { IFavicon } from '~/interfaces';
+import { requestURL } from '~/utils';
 import { observable } from 'mobx';
-
-const icojs = require('icojs');
-const fileType = require('file-type');
+import { Database } from '~/models/database';
+import * as fileType from 'file-type';
+import icojs = require('icojs');
 
 const convertIcoToPng = (icoData: Buffer) => {
   return new Promise((resolve: (b: Buffer) => void) => {
@@ -28,32 +26,20 @@ const readImage = (buffer: Buffer) => {
 };
 
 export class FaviconsStore {
-  public db = new Datastore({
-    filename: getPath('storage/favicons.db'),
-    autoload: true,
-  });
+  public db = new Database<IFavicon>('favicons');
 
   @observable
-  public favicons: { [key: string]: string } = {};
+  public favicons: Map<string, string> = new Map();
 
-  public faviconsBuffers: { [key: string]: Buffer } = {};
+  public faviconsBuffers: Map<string, Buffer> = new Map();
 
-  constructor() {
+  public constructor() {
     this.load();
   }
 
-  public getFavicons = (query: Favicon = {}) => {
-    return new Promise((resolve: (favicons: Favicon[]) => void, reject) => {
-      this.db.find(query, (err: any, docs: Favicon[]) => {
-        if (err) return reject(err);
-        resolve(docs);
-      });
-    });
-  };
-
-  public addFavicon = async (url: string) => {
-    return new Promise(async (resolve: (a: any) => void, reject: any) => {
-      if (!this.favicons[url]) {
+  public addFavicon = async (url: string): Promise<string> => {
+    return new Promise(async (resolve, reject) => {
+      if (!this.favicons.get(url)) {
         try {
           const res = await requestURL(url);
 
@@ -76,29 +62,25 @@ export class FaviconsStore {
             data: str,
           });
 
-          this.favicons[url] = str;
+          this.favicons.set(url, str);
 
           resolve(str);
         } catch (e) {
           reject(e);
         }
       } else {
-        resolve(this.favicons[url]);
+        resolve(this.favicons.get(url));
       }
     });
   };
 
   public async load() {
-    await this.db.find({}, (err: any, docs: Favicon[]) => {
-      if (err) return console.warn(err);
+    (await this.db.get({})).forEach(favicon => {
+      const { data } = favicon;
 
-      docs.forEach(favicon => {
-        const { data } = favicon;
-
-        if (this.favicons[favicon.url] == null) {
-          this.favicons[favicon.url] = data;
-        }
-      });
+      if (this.favicons.get(favicon.url) == null) {
+        this.favicons.set(favicon.url, data);
+      }
     });
   }
 }

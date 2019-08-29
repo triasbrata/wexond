@@ -1,5 +1,14 @@
 import { ISearchEngine } from './search-engine';
 import { ISelectedPrinter } from './selected-printer';
+export interface ISearchEngine {
+  name: string;
+  url: string;
+  keywordsUrl: string;
+}
+
+export interface IStartupBehavior {
+  type: 'continue' | 'urls' | 'empty';
+}
 
 export interface ISettings {
   darkTheme: boolean;
@@ -11,4 +20,5 @@ export interface ISettings {
   searchEngine: number;
   selectedPrinter: ISelectedPrinter[] | any[],
   searchEngines: ISearchEngine[];
+  startupBehavior: IStartupBehavior;
 }

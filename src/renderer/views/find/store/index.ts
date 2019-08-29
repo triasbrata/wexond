@@ -2,24 +2,29 @@ import * as React from 'react';
 
 import { observable } from 'mobx';
 import { ipcRenderer, remote } from 'electron';
+import { getCurrentWindow } from '../../app/utils/windows';
 
 export class Store {
-  public tabId: number;
-
-  public findInputRef = React.createRef<HTMLInputElement>();
-
   @observable
   public occurrences: string = '0/0';
 
   @observable
   public text: string = '';
 
+  public tabId: number;
+
+  public findInputRef = React.createRef<HTMLInputElement>();
+
   public visible = false;
 
-  constructor() {
+  public windowId: number = ipcRenderer.sendSync(
+    `get-window-id-${getCurrentWindow().id}`,
+  );
+
+  public constructor() {
     ipcRenderer.on(
       'found-in-page',
-      (e: any, { activeMatchOrdinal, matches }: Electron.FoundInPageResult) => {
+      (e, { activeMatchOrdinal, matches }: Electron.FoundInPageResult) => {
         this.occurrences = `${activeMatchOrdinal}/${matches}`;
         this.updateTabInfo();
       },
@@ -27,7 +32,7 @@ export class Store {
 
     ipcRenderer.on(
       'update-info',
-      (e: any, tabId: number, { text, occurrences, visible }: any) => {
+      (e, tabId: number, { text, occurrences, visible }) => {
         this.tabId = tabId;
         this.occurrences = occurrences;
         this.text = text;
@@ -48,8 +53,8 @@ export class Store {
     );
   }
 
-  updateTabInfo() {
-    ipcRenderer.send('update-tab-find-info', this.tabId, {
+  public updateTabInfo() {
+    ipcRenderer.send(`update-tab-find-info-${this.windowId}`, this.tabId, {
       occurrences: this.occurrences,
       text: this.text,
       visible: this.visible,

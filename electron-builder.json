@@ -22,17 +22,22 @@
       {
         "target": "AppImage",
         "arch": ["ia32", "x64"]
+      },
+      {
+        "target": "deb",
+        "arch": ["ia32", "x64"]
       }
     ]
   },
   "win": {
     "target": [
       {
-        "target":"portable",
-        "arch": [
-          "ia32",
-          "x64"
-        ]
+        "target": "nsis",
+        "arch": ["x64", "ia32"]
+      },
+      {
+        "target": "zip",
+        "arch": ["x64", "ia32"]
       }
     ]
   },

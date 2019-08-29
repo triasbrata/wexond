@@ -1,15 +1,19 @@
+import { ipcRenderer, remote, webContents } from 'electron';
+import { parse } from 'url';
 import { observable, computed, action } from 'mobx';
 import * as React from 'react';
-import { ipcRenderer } from 'electron';
 import Vibrant = require('node-vibrant');
 
 import store from '../store';
 import {
   TABS_PADDING,
-  defaultTabOptions,
   TAB_ANIMATION_DURATION,
+  TAB_MIN_WIDTH,
+  TAB_MAX_WIDTH,
+  TAB_PINNED_WIDTH,
 } from '../constants';
 import { getColorBrightness, callViewMethod } from '~/utils';
+import console = require('console');
 
 const isColorAcceptable = (color: string) => {
   if (store.theme['tab.allowLightBackground']) {
@@ -24,25 +28,31 @@ export class ITab {
   public id: number;
 
   @observable
-  public isDragging: boolean = false;
+  public isDragging = false;
+
+  @observable
+  public isPinned = false;
+
+  @observable
+  public isMuted = false;
 
   @observable
   public title: string = 'New tab';
 
   @observable
-  public loading: boolean = false;
+  public loading = false;
 
   @observable
-  public favicon: string = '';
+  public favicon = '';
 
   @observable
   public tabGroupId: number;
 
   @observable
-  public width: number = 0;
+  public width = 0;
 
   @observable
-  public background: string = store.theme.accentColor;
+  public background = store.theme.accentColor;
 
   @observable
   public url = '';
@@ -56,6 +66,9 @@ export class ITab {
 
   @observable
   public blockedAds = 0;
+
+  @observable
+  public hasCredentials = false;
 
   public left = 0;
   public lastUrl = '';
@@ -104,8 +117,8 @@ export class ITab {
     return this.favicon !== '' || this.loading;
   }
 
-  constructor(
-    { active, url } = defaultTabOptions,
+  public constructor(
+    { active, url, pinned }: chrome.tabs.CreateProperties,
     id: number,
     tabGroupId: number,
     isWindow: boolean,
@@ -114,6 +127,7 @@ export class ITab {
     this.id = id;
     this.isWindow = isWindow;
     this.tabGroupId = tabGroupId;
+    this.isPinned = pinned;
 
     if (active) {
       requestAnimationFrame(() => {
@@ -123,37 +137,32 @@ export class ITab {
 
     if (isWindow) return;
 
-    ipcRenderer.on(
-      `view-url-updated-${this.id}`,
-      async (e: any, url: string) => {
-        if (url && url !== this.url) {
-          this.lastHistoryId = await store.history.addItem({
-            title: this.title,
-            url,
-            favicon: this.favicon,
-            date: new Date().toString(),
-          });
-        }
+    ipcRenderer.on(`view-url-updated-${this.id}`, async (e, url: string) => {
+      if (url && url !== this.url && !store.isIncognito) {
+        this.lastHistoryId = await store.history.addItem({
+          title: this.title,
+          url,
+          favicon: this.favicon,
+          date: new Date().toString(),
+        });
+      }
 
-        this.url = url;
-        this.updateData();
-      },
-    );
+      this.url = url;
+      this.updateData();
+    });
 
-    ipcRenderer.on(`view-title-updated-${this.id}`, (e: any, title: string) => {
+    ipcRenderer.on(`view-title-updated-${this.id}`, (e, title: string) => {
       this.title = title === 'about:blank' ? 'New tab' : title;
       this.updateData();
+
+      if (this.isSelected) {
+        this.updateWindowTitle();
+      }
     });
 
     ipcRenderer.on(
       `load-commit-${this.id}`,
-      (
-        e: any,
-        event: any,
-        url: string,
-        isInPlace: boolean,
-        isMainFrame: boolean,
-      ) => {
+      (e, event, url: string, isInPlace: boolean, isMainFrame: boolean) => {
         if (isMainFrame) {
           this.blockedAds = 0;
         }
@@ -162,7 +171,7 @@ export class ITab {
 
     ipcRenderer.on(
       `browserview-favicon-updated-${this.id}`,
-      async (e: any, favicon: string) => {
+      async (e, favicon: string) => {
         try {
           this.favicon = favicon;
 
@@ -173,14 +182,18 @@ export class ITab {
           const buf = Buffer.from(fav.split('base64,')[1], 'base64');
 
           if (!this.hasThemeColor) {
-            const palette = await Vibrant.from(buf).getPalette();
+            try {
+              const palette = await Vibrant.from(buf).getPalette();
 
-            if (!palette.Vibrant) return;
+              if (!palette.Vibrant) return;
 
-            if (isColorAcceptable(palette.Vibrant.hex)) {
-              this.background = palette.Vibrant.hex;
-            } else {
-              this.background = store.theme.accentColor;
+              if (isColorAcceptable(palette.Vibrant.hex)) {
+                this.background = palette.Vibrant.hex;
+              } else {
+                this.background = store.theme.accentColor;
+              }
+            } catch (e) {
+              console.error(e);
             }
           }
         } catch (e) {
@@ -197,7 +210,7 @@ export class ITab {
 
     ipcRenderer.on(
       `browserview-theme-color-updated-${this.id}`,
-      (e: any, themeColor: string) => {
+      (e, themeColor: string) => {
         if (themeColor && isColorAcceptable(themeColor)) {
           this.background = themeColor;
           this.hasThemeColor = true;
@@ -208,8 +221,16 @@ export class ITab {
       },
     );
 
-    ipcRenderer.on(`view-loading-${this.id}`, (e: any, loading: boolean) => {
+    ipcRenderer.on(`tab-pinned-${this.id}`, (e, isPinned: boolean) => {
+      this.isPinned = isPinned;
+    });
+
+    ipcRenderer.on(`view-loading-${this.id}`, (e, loading: boolean) => {
       this.loading = loading;
+    });
+
+    ipcRenderer.on(`has-credentials-${this.id}`, (e, found: boolean) => {
+      this.hasCredentials = found;
     });
 
     const { defaultBrowserActions, browserActions } = store.extensions;
@@ -221,31 +242,45 @@ export class ITab {
     }
   }
 
+  public updateWindowTitle() {
+    remote.getCurrentWindow().setTitle(`${this.title} - Wexond`);
+  }
+
   @action
-  public updateData() {
-    if (this.lastHistoryId) {
-      const { title, url, favicon } = this;
+  public async updateData() {
+    if (!store.isIncognito) {
+      await store.startupTabs.addStartupTabItem({
+        id: this.id,
+        windowId: store.windowId,
+        url: this.url,
+        favicon: this.favicon,
+        pinned: this.isPinned,
+        title: this.title,
+        isUserDefined: false,
+      });
 
-      const item = store.history.getById(this.lastHistoryId);
+      if (this.lastHistoryId) {
+        const { title, url, favicon } = this;
 
-      if (item) {
-        item.title = title;
-        item.url = url;
-        item.favicon = favicon;
-      }
+        const item = store.history.getById(this.lastHistoryId);
 
-      store.history.db.update(
-        {
-          _id: this.lastHistoryId,
-        },
-        {
-          $set: {
+        if (item) {
+          item.title = title;
+          item.url = url;
+          item.favicon = favicon;
+        }
+
+        store.history.db.update(
+          {
+            _id: this.lastHistoryId,
+          },
+          {
             title,
             url,
             favicon,
           },
-        },
-      );
+        );
+      }
     }
   }
 
@@ -264,24 +299,25 @@ export class ITab {
 
       this.tabGroup.selectedTabId = this.id;
 
-      ipcRenderer.send('permission-dialog-hide');
+      ipcRenderer.send(`permission-dialog-hide-${store.windowId}`);
+
+      this.updateWindowTitle();
 
       const show = () => {
         if (this.isWindow) {
-          ipcRenderer.send('browserview-hide');
-          ipcRenderer.send('select-window', this.id);
+          ipcRenderer.send(`browserview-hide-${store.windowId}`);
+          ipcRenderer.send(`select-window-${store.windowId}`, this.id);
         } else {
-          ipcRenderer.send('hide-window');
+          ipcRenderer.send(`hide-window-${store.windowId}`);
           if (!store.overlay.isNewTab) {
-            ipcRenderer.send('browserview-show');
+            ipcRenderer.send(`browserview-show-${store.windowId}`);
           }
-          ipcRenderer.send('view-select', this.id);
-          ipcRenderer.send('update-find-info', this.id, this.findInfo);
-
-          store.tabs.emitEvent('onActivated', {
-            tabId: this.id,
-            windowId: 0,
-          });
+          ipcRenderer.send(`view-select-${store.windowId}`, this.id);
+          ipcRenderer.send(
+            `update-find-info-${store.windowId}`,
+            this.id,
+            this.findInfo,
+          );
         }
       };
 
@@ -303,6 +339,8 @@ export class ITab {
       containerWidth = store.tabs.containerWidth;
     }
 
+    if (this.isPinned) return TAB_PINNED_WIDTH;
+
     if (tabs === null) {
       tabs = store.tabs.list.filter(
         x => x.tabGroupId === this.tabGroupId && !x.isClosing,
@@ -312,11 +350,11 @@ export class ITab {
     const width =
       containerWidth / (tabs.length + store.tabs.removedTabs) - TABS_PADDING;
 
-    if (width > 200) {
-      return 200;
+    if (width > TAB_MAX_WIDTH) {
+      return TAB_MAX_WIDTH;
     }
-    if (width < 72) {
-      return 72;
+    if (width < TAB_MIN_WIDTH) {
+      return TAB_MIN_WIDTH;
     }
 
     return width;
@@ -356,10 +394,12 @@ export class ITab {
 
     const selected = tabGroup.selectedTabId === this.id;
 
+    store.startupTabs.removeStartupTabItem(this.id, store.windowId);
+
     if (this.isWindow) {
-      ipcRenderer.send('detach-window', this.id);
+      ipcRenderer.send(`detach-window-${store.windowId}`, this.id);
     } else {
-      ipcRenderer.send('view-destroy', this.id);
+      ipcRenderer.send(`view-destroy-${store.windowId}`, this.id);
     }
 
     const notClosingTabs = tabs.filter(x => !x.isClosing);
@@ -407,7 +447,7 @@ export class ITab {
     }, TAB_ANIMATION_DURATION * 1000);
   }
 
-  callViewMethod = (scope: string, ...args: any[]): Promise<any> => {
-    return callViewMethod(this.id, scope, ...args);
+  public callViewMethod = (scope: string, ...args: any[]): Promise<any> => {
+    return callViewMethod(store.windowId, this.id, scope, ...args);
   };
 }

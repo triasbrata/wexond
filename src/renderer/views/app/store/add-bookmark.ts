@@ -11,18 +11,18 @@ export class AddBookmarkStore {
 
   public dropdownRef = React.createRef<Dropdown>();
 
-  constructor() {
+  public constructor() {
     requestAnimationFrame(() => {
       window.removeEventListener('mousedown', this.onWindowMouseDown);
       window.addEventListener('mousedown', this.onWindowMouseDown);
-    })
+    });
   }
 
   public show() {
     const bookmark = store.overlay.bookmark;
 
     this.titleRef.current.value = bookmark.title;
-    this.dropdownRef.current.value = bookmark.parent;
+    this.dropdownRef.current.setValue(bookmark.parent, false);
     this.visible = true;
   }
 
@@ -32,5 +32,5 @@ export class AddBookmarkStore {
 
   public onWindowMouseDown = () => {
     this.visible = false;
-  }
+  };
 }

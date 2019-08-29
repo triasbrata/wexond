@@ -1,5 +1,6 @@
 import { AppWindow } from '../windows';
 import { clipboard, nativeImage, Menu } from 'electron';
+import { isURL, prefixHttp } from '~/utils';
 
 export const getViewMenu = (
   appWindow: AppWindow,
@@ -92,13 +93,13 @@ export const getViewMenu = (
         role: 'copy',
       },
       {
-        role: 'pasteandmatchstyle',
+        role: 'pasteAndMatchStyle',
       },
       {
         role: 'paste',
       },
       {
-        role: 'selectall',
+        role: 'selectAll',
       },
       {
         type: 'separator',
@@ -112,6 +113,25 @@ export const getViewMenu = (
         role: 'copy',
       },
     ]);
+
+    const trimmedText = params.selectionText.trim();
+
+    if (isURL(trimmedText)) {
+      menuItems = menuItems.concat([
+        {
+          label: 'Go to ' + trimmedText,
+          click: () => {
+            appWindow.viewManager.create(
+              {
+                url: prefixHttp(trimmedText),
+                active: true,
+              },
+              true,
+            );
+          },
+        },
+      ]);
+    }
   }
 
   if (

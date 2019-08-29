@@ -1,33 +1,19 @@
-import { BrowserWindow, app, ipcMain } from 'electron';
-import { join } from 'path';
+import { ipcMain } from 'electron';
 import { TOOLBAR_HEIGHT } from '~/renderer/views/app/constants/design';
 import { AppWindow } from '.';
+import { PopupWindow } from './popup';
 
-export class PermissionsWindow extends BrowserWindow {
-  constructor(public appWindow: AppWindow) {
-    super({
-      frame: false,
-      resizable: false,
-      width: 350,
-      height: 175,
-      transparent: true,
-      show: false,
-      fullscreenable: false,
-      webPreferences: {
-        nodeIntegration: true,
-        contextIsolation: false,
-      },
-      skipTaskbar: true,
-    });
+const HEIGHT = 175;
+const WIDTH = 350;
 
-    if (process.env.ENV === 'dev') {
-      // this.webContents.openDevTools({ mode: 'detach' });
-      this.loadURL('http://localhost:4444/permissions.html');
-    } else {
-      this.loadURL(join('file://', app.getAppPath(), 'build/permissions.html'));
-    }
+export class PermissionsWindow extends PopupWindow {
+  public constructor(appWindow: AppWindow) {
+    super(appWindow, 'permissions');
 
-    this.setParentWindow(this.appWindow);
+    this.setBounds({
+      height: HEIGHT,
+      width: WIDTH,
+    } as any);
   }
 
   public async requestPermission(
@@ -49,10 +35,13 @@ export class PermissionsWindow extends BrowserWindow {
 
       this.webContents.send('request-permission', { name, url, details });
 
-      ipcMain.once('request-permission-result', (e: any, r: boolean) => {
-        resolve(r);
-        this.hide();
-      });
+      ipcMain.once(
+        `request-permission-result-${this.appWindow.id}`,
+        (e, r: boolean) => {
+          resolve(r);
+          this.hide();
+        },
+      );
     });
   }
 

@@ -1,7 +1,7 @@
-import { ipcMain, session, IpcMainEvent } from 'electron';
+import { ipcMain } from 'electron';
 import { TOOLBAR_HEIGHT } from '~/renderer/views/app/constants/design';
-import { appWindow, log } from '.';
 import { View } from './view';
+import { AppWindow } from './windows';
 
 export class ViewManager {
   public views: View[] = [];
@@ -9,6 +9,10 @@ export class ViewManager {
   public _fullscreen = false;
 
   public isHidden = false;
+
+  private window: AppWindow;
+
+  public incognito: boolean;
 
   public get fullscreen() {
     return this._fullscreen;
@@ -19,12 +23,19 @@ export class ViewManager {
     this.fixBounds();
   }
 
-  constructor() {
-    ipcMain.on('view-create', (e, details: chrome.tabs.CreateProperties) => {
-      this.create(details);
-    });
+  public constructor(window: AppWindow, incognito: boolean) {
+    this.window = window;
+    this.incognito = incognito;
 
-    ipcMain.on('view-select', (e, id: number, force: boolean) => {
+    const { id } = window;
+    ipcMain.on(
+      `view-create-${id}`,
+      (e, details: chrome.tabs.CreateProperties) => {
+        this.create(details);
+      },
+    );
+    
+    ipcMain.on(`view-select-${id}`, (e, id: number, force: boolean) => {
       const view = this.views.find(x => x.webContents.id === id);
       this.select(id);
       view.updateNavigationState();
@@ -32,32 +43,11 @@ export class ViewManager {
       if (force) this.isHidden = false;
     });
 
-    ipcMain.on('clear-browsing-data', () => {
-      const ses = session.fromPartition('persist:view');
-      ses.clearCache((err: any) => {
-        if (err) log.error(err);
-      });
-
-      ses.clearStorageData({
-        storages: [
-          'appcache',
-          'cookies',
-          'filesystem',
-          'indexdb',
-          'localstorage',
-          'shadercache',
-          'websql',
-          'serviceworkers',
-          'cachestorage',
-        ],
-      });
-    });
-
-    ipcMain.on('view-destroy', (e, id: number) => {
+    ipcMain.on(`view-destroy-${id}`, (e, id: number) => {
       this.destroy(id);
     });
 
-    ipcMain.on('browserview-call', async (e: any, data: any) => {
+    ipcMain.on(`browserview-call-${id}`, async (e, data) => {
       const view = this.views.find(x => x.webContents.id === data.tabId);
       let scope: any = view;
 
@@ -75,19 +65,29 @@ export class ViewManager {
       }
 
       if (data.callId) {
-        appWindow.webContents.send(
+        this.window.webContents.send(
           `browserview-call-result-${data.callId}`,
           result,
         );
       }
     });
 
-    ipcMain.on('browserview-hide', () => {
+    ipcMain.on(`browserview-hide-${id}`, () => {
       this.hideView();
     });
 
-    ipcMain.on('browserview-show', () => {
+    ipcMain.on(`browserview-show-${id}`, () => {
       this.showView();
+    });
+
+    ipcMain.on(`mute-view-${id}`, (e, tabId: number) => {
+      const view = this.views.find(x => x.webContents.id === tabId);
+      view.webContents.setAudioMuted(true);
+    });
+
+    ipcMain.on(`unmute-view-${id}`, (e, tabId: number) => {
+      const view = this.views.find(x => x.webContents.id === tabId);
+      view.webContents.setAudioMuted(false);
     });
 
     setInterval(() => {
@@ -95,16 +95,18 @@ export class ViewManager {
         const url = view.webContents.getURL();
 
         if (url !== view.url) {
-          appWindow.webContents.send(
+          this.window.webContents.send(
             `view-url-updated-${view.webContents.id}`,
             url,
           );
+
           view.url = url;
+          view.updateCredentials();
         }
       }
     }, 200);
 
-    ipcMain.on('browserview-clear', () => {
+    ipcMain.on(`browserview-clear-${id}`, () => {
       this.clear();
     });
   }
@@ -114,10 +116,10 @@ export class ViewManager {
   }
 
   public create(details: chrome.tabs.CreateProperties, isNext = false) {
-    const view = new View(details.url);
+    const view = new View(this.window, details.url, this.incognito);
     this.views.push(view);
 
-    appWindow.webContents.send(
+    this.window.webContents.send(
       'api-tabs-create',
       { ...details },
       isNext,
@@ -128,7 +130,7 @@ export class ViewManager {
   }
 
   public clear() {
-    appWindow.setBrowserView(null);
+    this.window.setBrowserView(null);
     for (const key in this.views) {
       this.destroy(parseInt(key, 10));
     }
@@ -140,13 +142,13 @@ export class ViewManager {
 
     if (!view || view.isDestroyed()) {
       this.destroy(id);
-      appWindow.setBrowserView(null);
+      this.window.setBrowserView(null);
       return;
     }
 
     if (this.isHidden) return;
 
-    appWindow.setBrowserView(view);
+    this.window.setBrowserView(view);
 
     this.fixBounds();
   }
@@ -156,7 +158,7 @@ export class ViewManager {
 
     if (!view) return;
 
-    const { width, height } = appWindow.getContentBounds();
+    const { width, height } = this.window.getContentBounds();
     view.setBounds({
       x: 0,
       y: this.fullscreen ? 0 : TOOLBAR_HEIGHT + 1,
@@ -166,14 +168,12 @@ export class ViewManager {
     view.setAutoResize({
       width: true,
       height: true,
-      horizontal: true,
-      vertical: true,
-    });
+    } as any);
   }
 
   public hideView() {
     this.isHidden = true;
-    appWindow.setBrowserView(null);
+    this.window.setBrowserView(null);
   }
 
   public showView() {
@@ -187,8 +187,8 @@ export class ViewManager {
     this.views = this.views.filter(x => x.webContents.id !== id);
 
     if (view) {
-      if (appWindow.getBrowserView() === view) {
-        appWindow.setBrowserView(null);
+      if (this.window.getBrowserView() === view) {
+        this.window.setBrowserView(null);
       }
 
       view.destroy();

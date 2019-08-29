@@ -1,12 +1,13 @@
-import { observer } from 'mobx-react';
+import { observer } from 'mobx-react-lite';
 import * as React from 'react';
 import { ipcRenderer } from 'electron';
+import { parse } from 'url';
 
 import store from '../../store';
 import { Buttons, StyledToolbar, Handle, Separator } from './style';
 import { NavigationButtons } from './NavigationButtons';
 import { Tabbar } from './Tabbar';
-import ToolbarButton from './ToolbarButton';
+import { ToolbarButton } from './ToolbarButton';
 import { icons, colors } from '~/renderer/constants';
 import { BrowserAction } from './BrowserAction';
 
@@ -14,34 +15,43 @@ const onUpdateClick = () => {
   ipcRenderer.send('update-install');
 };
 
-@observer
-class BrowserActions extends React.Component {
-  public render() {
-    const { selectedTabId } = store.tabGroups.currentGroup;
+const onKeyClick = () => {
+  const { hostname } = parse(store.tabs.selectedTab.url);
+  const list = store.autoFill.credentials.filter(r => r.url === hostname && r.fields.username);
 
-    return (
-      <>
-        {selectedTabId &&
-          store.extensions.browserActions.map(item => {
-            if (item.tabId === selectedTabId) {
-              return <BrowserAction data={item} key={item.extensionId} />;
-            }
-            return null;
-          })}
-      </>
-    );
-  }
-}
+  ipcRenderer.send(`credentials-show-${store.windowId}`, {
+    content: 'list',
+    list,
+  });
+};
+
+const BrowserActions = observer(() => {
+  const { selectedTabId } = store.tabGroups.currentGroup;
+
+  return (
+    <>
+      {selectedTabId &&
+        store.extensions.browserActions.map(item => {
+          if (item.tabId === selectedTabId) {
+            return <BrowserAction data={item} key={item.extensionId} />;
+          }
+          return null;
+        })}
+    </>
+  );
+});
 
 export const Toolbar = observer(() => {
   const { selectedTab } = store.tabs;
 
   let isWindow = false;
-  let blockedAds: any = '';
+  let blockedAds = 0;
+  let hasCredentials = false;
 
   if (selectedTab) {
     isWindow = selectedTab.isWindow;
     blockedAds = selectedTab.blockedAds;
+    hasCredentials = selectedTab.hasCredentials;
   }
 
   return (
@@ -64,7 +74,10 @@ export const Toolbar = observer(() => {
           <ToolbarButton icon={icons.download} onClick={onUpdateClick} />
         )}
         {store.extensions.browserActions.length > 0 && <Separator />}
-        {!isWindow && (
+        {hasCredentials && (
+          <ToolbarButton icon={icons.key} size={16} onClick={onKeyClick} />
+        )}
+        {!isWindow && store.settings.object.shield == true && (
           <BrowserAction
             size={18}
             style={{ marginLeft: 0 }}
@@ -77,6 +90,12 @@ export const Toolbar = observer(() => {
               badgeTextColor: 'white',
             }}
           />
+        )}
+        {store.isIncognito && (
+          <>
+            <Separator />
+            <ToolbarButton icon={icons.incognito} size={18} />
+          </>
         )}
       </Buttons>
     </StyledToolbar>
